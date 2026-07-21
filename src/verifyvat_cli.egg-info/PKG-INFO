@@ -38,6 +38,8 @@ Use the following terms consistently across the repository:
 
 This application requires Python 3.13 or higher. We recommend using the uv package manager for dependency resolution.
 
+The current phase-1 implementation scope ships the `check` and `bulk` commands first. The `audit` and `discovery` commands remain planned follow-on work and are documented for the broader product roadmap rather than the initial code skeleton.
+
 1. Clone the repository:
 
    ```bash
@@ -48,8 +50,7 @@ This application requires Python 3.13 or higher. We recommend using the uv packa
 2. Create the virtual environment and install dependencies:
 
    ```bash
-   uv venv
-   uv pip install -r requirements.txt
+   uv sync
    ```
 
 ## Security and Authentication Configuration
@@ -99,12 +100,14 @@ Ingest a CSV containing raw identifiers and output an enriched dataset.
 verifyvat bulk ./inputs/legacy_suppliers.csv --output ./enriched_suppliers.csv
 ```
 
+Phase 1 bulk mode expects an input CSV with an `identifier` column. Optional `country` and `type` columns may be supplied per row. The output CSV preserves the original columns and appends `normalized_identifier`, `inferred_type`, `internal_status`, `legal_name`, `address`, `consultation_receipt`, `diagnostics`, and `execution_timestamp`.
+
 ### Retrieving Audit Evidence
 
-Query the local SQLite database to review historical validation attempts.
+Phase 1 writes audit records to `~/.verifyvat/audit.db` for every handled `check` result and every attempted bulk row. A dedicated `audit` command is planned follow-on work.
 
 ```bash
-verifyvat audit --limit 10
+sqlite3 ~/.verifyvat/audit.db "SELECT * FROM verification_logs ORDER BY transaction_id DESC LIMIT 10;"
 ```
 
 ## Licensing and Contributions

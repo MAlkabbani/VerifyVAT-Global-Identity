@@ -1,9 +1,15 @@
 pyproject.toml
 docs/README.md
 src/verifyvat_cli/__init__.py
+src/verifyvat_cli/core.py
+src/verifyvat_cli/db.py
+src/verifyvat_cli/main.py
 src/verifyvat_cli.egg-info/PKG-INFO
 src/verifyvat_cli.egg-info/SOURCES.txt
 src/verifyvat_cli.egg-info/dependency_links.txt
 src/verifyvat_cli.egg-info/entry_points.txt
 src/verifyvat_cli.egg-info/requires.txt
 src/verifyvat_cli.egg-info/top_level.txt
+tests/test_core.py
+tests/test_db.py
+tests/test_main.py
