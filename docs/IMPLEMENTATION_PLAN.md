@@ -11,8 +11,9 @@ The currently shipped implementation phase includes the Python CLI skeleton for:
 - `verifyvat check`
 - `verifyvat bulk`
 - `verifyvat audit`
+- `verifyvat discovery`
 
-The broader product surface still includes `discovery`, but that command remains follow-on work until its behavior is implemented.
+The broader product surface now centers on deepening the existing commands rather than adding another top-level slice.
 
 ## Locked Choices
 
@@ -31,6 +32,7 @@ The broader product surface still includes `discovery`, but that command remains
 - `src/` packaging gives the project a clean installable `verifyvat` command surface.
 - `pyproject.toml` plus `uv sync` matches the repository's Python 3.13 and `uv` direction better than an ad hoc `requirements.txt` flow.
 - Shipping `audit` immediately after `check` and `bulk` closes the local compliance loop before expanding into remote metadata discovery.
+- Shipping `discovery` with both sections by default keeps the first metadata slice practical while still allowing narrow `--formats` and `--sources` views.
 - Narrow module boundaries keep secret handling, audit writes, and rendering responsibilities explicit.
 
 ## Delivery Order
@@ -71,5 +73,5 @@ Bulk mode writes the original columns plus:
 
 ## Deferred Follow-On Work
 
-- Add the `discovery` command for supported formats and registry/source inspection.
-- Expand operational docs once `discovery` ships.
+- Expand discovery depth if the provider later exposes richer freshness metadata or if the team wants more filter surfaces.
+- Add any future export or caching options only if the command contract requires them.

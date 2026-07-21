@@ -18,6 +18,9 @@ from rich.table import Table
 
 from verifyvat_cli.core import (
     ConfigError,
+    DiscoveryResult,
+    DiscoveryRuntimeError,
+    DiscoveryService,
     VerificationResult,
     VerificationService,
     verify_once,
@@ -61,6 +64,22 @@ AUDIT_TABLE_COLUMNS = [
     ("normalized_identifier", "Normalized Identifier"),
     ("inferred_type", "Inferred Type"),
     ("legal_name", "Legal Name"),
+]
+DISCOVERY_FORMAT_COLUMNS = [
+    ("id", "Type"),
+    ("country", "Country"),
+    ("region", "Region"),
+    ("validation", "Validation"),
+    ("coverage", "Coverage"),
+    ("name", "Name"),
+]
+DISCOVERY_SOURCE_COLUMNS = [
+    ("id", "Source"),
+    ("country", "Country"),
+    ("active", "Active"),
+    ("jurisdictions", "Jurisdictions"),
+    ("coverage", "Coverage"),
+    ("name", "Name"),
 ]
 
 
@@ -116,6 +135,29 @@ def build_parser() -> argparse.ArgumentParser:
     )
     audit_parser.set_defaults(handler=handle_audit)
 
+    discovery_parser = subparsers.add_parser(
+        "discovery",
+        help="Inspect supported formats and registry sources.",
+    )
+    discovery_parser.add_argument(
+        "--formats",
+        action="store_true",
+        help="Show supported identifier formats only.",
+    )
+    discovery_parser.add_argument(
+        "--sources",
+        action="store_true",
+        help="Show supported registry sources only.",
+    )
+    discovery_parser.add_argument("--country", help="Optional ISO country filter.")
+    discovery_parser.add_argument("--region", help="Optional region filter such as EMEA or EU.")
+    discovery_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Write only machine-readable JSON to stdout.",
+    )
+    discovery_parser.set_defaults(handler=handle_discovery)
+
     return parser
 
 
@@ -127,9 +169,12 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         return int(args.handler(args))
+    except ConfigError as exc:
+        _print_error(_sanitize_cli_error(str(exc)))
+        return CONFIG_EXIT_CODE
     except KeyboardInterrupt:
         _print_error("Interrupted by user.")
-        return NETWORK_EXIT_CODE
+        return INVALID_EXIT_CODE
     except Exception as exc:
         if args.debug:
             traceback.print_exc(file=sys.stderr)
@@ -294,6 +339,71 @@ def handle_audit(args: argparse.Namespace) -> int:
         export_path=export_path,
         console=stdout_console,
     )
+    return SUCCESS_EXIT_CODE
+
+
+def handle_discovery(args: argparse.Namespace) -> int:
+    """Inspect supported identifier formats and registry sources."""
+
+    stdout_console = Console()
+    stderr_console = Console(stderr=True)
+    include_formats, include_sources = _resolve_discovery_sections(args)
+
+    try:
+        service = DiscoveryService.from_environment()
+    except ConfigError as exc:
+        if args.json:
+            _emit_json(
+                _build_discovery_error_payload(
+                    status="CONFIG_ERROR",
+                    message=str(exc),
+                    include_formats=include_formats,
+                    include_sources=include_sources,
+                    country=args.country,
+                    region=args.region,
+                )
+            )
+        else:
+            _print_error(str(exc))
+        return CONFIG_EXIT_CODE
+
+    try:
+        if args.json:
+            result = service.discover(
+                include_formats=include_formats,
+                include_sources=include_sources,
+                country=args.country,
+                region=args.region,
+            )
+            _emit_json(result.to_json_dict())
+            return SUCCESS_EXIT_CODE
+
+        with stderr_console.status("Loading discovery metadata..."):
+            result = service.discover(
+                include_formats=include_formats,
+                include_sources=include_sources,
+                country=args.country,
+                region=args.region,
+            )
+    except DiscoveryRuntimeError as exc:
+        if args.json:
+            _emit_json(
+                _build_discovery_error_payload(
+                    status="NETWORK_ERROR",
+                    message=str(exc),
+                    include_formats=include_formats,
+                    include_sources=include_sources,
+                    country=args.country,
+                    region=args.region,
+                )
+            )
+        else:
+            _print_error(str(exc))
+        return NETWORK_EXIT_CODE
+    finally:
+        service.close()
+
+    _render_discovery_result(result, stdout_console)
     return SUCCESS_EXIT_CODE
 
 
@@ -462,6 +572,59 @@ def _render_audit_records(
     console.print(history_table)
 
 
+def _render_discovery_result(result: DiscoveryResult, console: Console) -> None:
+    """Render supported formats and registry sources in concise tables."""
+
+    summary_table = Table(title="VerifyVAT Discovery")
+    summary_table.add_column("Field", style="bold cyan")
+    summary_table.add_column("Value")
+    summary_table.add_row("Country Filter", result.country or "(none)")
+    summary_table.add_row("Region Filter", result.region or "(none)")
+    summary_table.add_row("Formats Included", "yes" if result.include_formats else "no")
+    summary_table.add_row("Sources Included", "yes" if result.include_sources else "no")
+    summary_table.add_row("Formats Returned", str(len(result.formats)))
+    summary_table.add_row("Sources Returned", str(len(result.sources)))
+    console.print(summary_table)
+
+    if result.include_formats:
+        formats_table = Table(title="Supported Formats")
+        for _, label in DISCOVERY_FORMAT_COLUMNS:
+            formats_table.add_column(label)
+
+        if not result.formats:
+            formats_table.add_row("(none)", "(none)", "(none)", "(none)", "(none)", "(none)")
+        else:
+            for item in result.formats:
+                formats_table.add_row(
+                    str(item.get("id", "")),
+                    str(item.get("country", "")),
+                    str(item.get("region", "")),
+                    str(item.get("validation", "")),
+                    str(item.get("coverage", "")),
+                    str(item.get("name", "")),
+                )
+        console.print(formats_table)
+
+    if result.include_sources:
+        sources_table = Table(title="Registry Sources")
+        for _, label in DISCOVERY_SOURCE_COLUMNS:
+            sources_table.add_column(label)
+
+        if not result.sources:
+            sources_table.add_row("(none)", "(none)", "(none)", "(none)", "(none)", "(none)")
+        else:
+            for item in result.sources:
+                sources_table.add_row(
+                    str(item.get("id", "")),
+                    str(item.get("country", "")),
+                    "yes" if bool(item.get("active")) else "no",
+                    ", ".join(str(value) for value in item.get("jurisdictions", [])) or "(none)",
+                    ", ".join(str(value) for value in item.get("coverage", [])) or "(none)",
+                    str(item.get("name", "")),
+                )
+        console.print(sources_table)
+
+
 def _build_bulk_output_row(row: dict[str, str], result: VerificationResult) -> dict[str, str]:
     """Append the enriched verification fields to one bulk output row."""
 
@@ -503,6 +666,35 @@ def _build_runtime_error_payload(*, message: str, db_path: Path) -> dict[str, An
         "audit_record": {
             "database_path": str(db_path),
         },
+    }
+
+
+def _build_discovery_error_payload(
+    *,
+    status: str,
+    message: str,
+    include_formats: bool,
+    include_sources: bool,
+    country: str | None,
+    region: str | None,
+) -> dict[str, Any]:
+    """Build a machine-readable error payload for discovery mode."""
+
+    return {
+        "query": {
+            "country": country,
+            "region": region,
+            "include_formats": include_formats,
+            "include_sources": include_sources,
+        },
+        "discovery_result": {
+            "status": status,
+            "diagnostics": [message],
+            "formats_count": 0,
+            "sources_count": 0,
+        },
+        "formats": [],
+        "sources": [],
     }
 
 
@@ -564,6 +756,14 @@ def _positive_int(value: str) -> int:
     if parsed_value <= 0:
         raise argparse.ArgumentTypeError("value must be greater than zero.")
     return parsed_value
+
+
+def _resolve_discovery_sections(args: argparse.Namespace) -> tuple[bool, bool]:
+    """Default discovery to both sections unless the user narrows the request."""
+
+    if args.formats or args.sources:
+        return bool(args.formats), bool(args.sources)
+    return True, True
 
 
 if __name__ == "__main__":

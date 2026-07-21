@@ -9,8 +9,10 @@ from datetime import UTC, datetime
 from typing import Any, Literal
 
 import httpx
-from verifyvat_sdk import TypeInferrer, Verifier, VerifyVatClient
+from verifyvat_sdk import TypeInferrer, Verifier, VerifyVatClient, list_data_sources, list_id_types
 from verifyvat_sdk.client.errors import VerifyVatError
+from verifyvat_sdk.domain_graph.id_types import get_type_coverage_level
+from verifyvat_sdk.domain_graph.types import DataSourceDefinition, IdTypeDefinition
 from verifyvat_sdk.entity import describe_entity
 from verifyvat_sdk.infer_type.types import InferTypeCandidate, InferTypeResponse
 from verifyvat_sdk.verify_id.describe import VerificationDescription
@@ -24,6 +26,10 @@ PersistedStatus = Literal["VALID", "INVALID", "NETWORK_ERROR"]
 
 class ConfigError(Exception):
     """Raised when required local configuration is missing or invalid."""
+
+
+class DiscoveryRuntimeError(Exception):
+    """Raised when the discovery endpoints fail at runtime."""
 
 
 @dataclass(slots=True)
@@ -67,6 +73,39 @@ class VerificationResult:
                 "database_path": audit_db_path,
             },
             "provider_payload": self.provider_payload,
+        }
+
+
+@dataclass(slots=True)
+class DiscoveryResult:
+    """Structured discovery result shared between the core layer and CLI renderers."""
+
+    execution_timestamp: str
+    country: str | None
+    region: str | None
+    include_formats: bool
+    include_sources: bool
+    formats: list[dict[str, Any]]
+    sources: list[dict[str, Any]]
+
+    def to_json_dict(self) -> dict[str, Any]:
+        """Shape the discovery result into the stable `--json` output contract."""
+
+        return {
+            "query": {
+                "country": self.country,
+                "region": self.region,
+                "include_formats": self.include_formats,
+                "include_sources": self.include_sources,
+            },
+            "discovery_result": {
+                "status": "OK",
+                "execution_timestamp": self.execution_timestamp,
+                "formats_count": len(self.formats),
+                "sources_count": len(self.sources),
+            },
+            "formats": self.formats,
+            "sources": self.sources,
         }
 
 
@@ -187,6 +226,76 @@ class VerificationService:
         )
 
 
+@dataclass(slots=True)
+class DiscoveryService:
+    """Wraps the SDK discovery endpoints behind a narrow domain-oriented interface."""
+
+    client: VerifyVatClient
+
+    @classmethod
+    def from_environment(cls, *, timeout_ms: int = DEFAULT_TIMEOUT_MS) -> DiscoveryService:
+        """Build an SDK-backed discovery service using environment configuration only."""
+
+        api_key = os.environ.get("VERIFYVAT_API_KEY")
+        if not api_key:
+            raise ConfigError(
+                "Missing VERIFYVAT_API_KEY. Export the environment variable and retry."
+            )
+
+        return cls(client=VerifyVatClient(api_key=api_key, timeout_ms=timeout_ms))
+
+    def close(self) -> None:
+        """Release the underlying SDK client resources."""
+
+        self.client.close()
+
+    def discover(
+        self,
+        *,
+        include_formats: bool,
+        include_sources: bool,
+        country: str | None = None,
+        region: str | None = None,
+    ) -> DiscoveryResult:
+        """List supported ID formats and/or source registries."""
+
+        execution_timestamp = _utc_now_iso()
+        normalized_country = normalize_country_hint(country)
+        normalized_region = normalize_region_hint(region)
+
+        try:
+            raw_formats = (
+                list_id_types(
+                    self.client,
+                    country=normalized_country,
+                    region=normalized_region,
+                )
+                if include_formats
+                else []
+            )
+            raw_sources = (
+                list_data_sources(
+                    self.client,
+                    country=normalized_country,
+                    group=normalized_region,
+                )
+                if include_sources
+                else []
+            )
+        except (VerifyVatError, httpx.TimeoutException, httpx.HTTPError, json.JSONDecodeError) as exc:
+            raise DiscoveryRuntimeError(_sanitize_error_message(str(exc))) from exc
+
+        return DiscoveryResult(
+            execution_timestamp=execution_timestamp,
+            country=normalized_country,
+            region=normalized_region,
+            include_formats=include_formats,
+            include_sources=include_sources,
+            formats=[_serialize_id_type(item) for item in raw_formats],
+            sources=[_serialize_data_source(item) for item in raw_sources],
+        )
+
+
 def verify_once(
     raw_identifier: str,
     *,
@@ -219,6 +328,28 @@ def verify_once(
         service.close()
 
 
+def discover_once(
+    *,
+    include_formats: bool,
+    include_sources: bool,
+    country: str | None = None,
+    region: str | None = None,
+    timeout_ms: int = DEFAULT_TIMEOUT_MS,
+) -> DiscoveryResult:
+    """Discover supported formats and/or registries with an ephemeral SDK client."""
+
+    service = DiscoveryService.from_environment(timeout_ms=timeout_ms)
+    try:
+        return service.discover(
+            include_formats=include_formats,
+            include_sources=include_sources,
+            country=country,
+            region=region,
+        )
+    finally:
+        service.close()
+
+
 def normalize_identifier(raw_identifier: str) -> str:
     """Normalize a raw identifier by trimming whitespace and removing separators."""
 
@@ -243,6 +374,16 @@ def normalize_explicit_type(explicit_type: str | None) -> str | None:
 
     cleaned_type = explicit_type.strip().lower()
     return cleaned_type or None
+
+
+def normalize_region_hint(region: str | None) -> str | None:
+    """Normalize a user-provided region hint into an uppercase token."""
+
+    if region is None:
+        return None
+
+    cleaned_region = "".join(character for character in region.strip().upper() if character.isalpha())
+    return cleaned_region or None
 
 
 def _build_verification_result(
@@ -280,6 +421,39 @@ def _build_verification_result(
             "verification": _coerce_jsonable(verification),
         },
     )
+
+
+def _serialize_id_type(id_type: IdTypeDefinition) -> dict[str, Any]:
+    """Project one SDK ID-type definition into a CLI-stable payload."""
+
+    sources = id_type.get("sources") or []
+    return {
+        "id": id_type.get("id"),
+        "acronym": id_type.get("acronym"),
+        "name": id_type.get("name"),
+        "country": id_type.get("country"),
+        "region": id_type.get("region"),
+        "validation": id_type.get("validation"),
+        "coverage": get_type_coverage_level(id_type),
+        "format": list(id_type.get("format") or []),
+        "sources": [str(source.get("id")) for source in sources if source.get("id")],
+    }
+
+
+def _serialize_data_source(source: DataSourceDefinition) -> dict[str, Any]:
+    """Project one SDK data-source definition into a CLI-stable payload."""
+
+    supported_types = source.get("types") or []
+    return {
+        "id": source.get("id"),
+        "acronym": source.get("acronym"),
+        "name": source.get("name"),
+        "country": source.get("country"),
+        "active": bool(source.get("active")),
+        "jurisdictions": list(source.get("jurisdictions") or []),
+        "supported_types": [str(item.get("id")) for item in supported_types if item.get("id")],
+        "coverage": sorted({str(item.get("coverage")) for item in supported_types if item.get("coverage")}),
+    }
 
 
 def _build_local_invalid_result(

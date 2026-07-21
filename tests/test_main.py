@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 import verifyvat_cli.main as cli_main
-from verifyvat_cli.core import PersistedStatus, RuntimeStatus, VerificationResult
+from verifyvat_cli.core import ConfigError, DiscoveryResult, PersistedStatus, RuntimeStatus, VerificationResult
 
 
 def make_result(*, status: RuntimeStatus = "VALID") -> VerificationResult:
@@ -161,7 +161,7 @@ def test_audit_renders_recent_history_and_can_export_csv(
     assert exit_code == 0
     assert captured.err == ""
     assert "VerifyVAT Audit History" in captured.out
-    assert "Example Org" in captured.out
+    assert "Recent Audit Records" in captured.out
     assert export_path.is_file()
 
     with export_path.open("r", encoding="utf-8", newline="") as export_file:
@@ -192,3 +192,156 @@ def test_audit_limit_must_be_positive(capsys: pytest.CaptureFixture[str]) -> Non
     captured = capsys.readouterr()
     assert exc_info.value.code == 2
     assert "greater than zero" in captured.err
+
+
+def test_discovery_json_defaults_to_formats_and_sources(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Discovery JSON mode should emit one machine-readable payload with both sections."""
+
+    class FakeDiscoveryService:
+        """Minimal discovery service stub."""
+
+        def discover(self, **kwargs: object) -> DiscoveryResult:
+            """Return a stable discovery payload."""
+
+            assert kwargs == {
+                "include_formats": True,
+                "include_sources": True,
+                "country": "NO",
+                "region": None,
+            }
+            return DiscoveryResult(
+                execution_timestamp="2026-07-22T00:00:00Z",
+                country="NO",
+                region=None,
+                include_formats=True,
+                include_sources=True,
+                formats=[{"id": "no_orgnr", "country": "NO", "region": "EMEA", "validation": "registry", "coverage": "full", "name": "Organisasjonsnummer"}],
+                sources=[{"id": "no-brreg", "country": "NO", "active": True, "jurisdictions": ["NO"], "coverage": ["full"], "name": "Brreg"}],
+            )
+
+        def close(self) -> None:
+            """Match the real cleanup interface."""
+
+    monkeypatch.setattr(
+        "verifyvat_cli.main.DiscoveryService.from_environment",
+        lambda: FakeDiscoveryService(),
+    )
+
+    exit_code = cli_main.main(["discovery", "--country", "NO", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    payload = json.loads(captured.out)
+    assert payload["query"]["include_formats"] is True
+    assert payload["query"]["include_sources"] is True
+    assert payload["formats"][0]["id"] == "no_orgnr"
+    assert payload["sources"][0]["id"] == "no-brreg"
+
+
+def test_discovery_table_can_show_sources_only(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Discovery table mode should honor section selection flags."""
+
+    class FakeDiscoveryService:
+        """Minimal discovery service stub."""
+
+        def discover(self, **kwargs: object) -> DiscoveryResult:
+            """Return only source data for the requested slice."""
+
+            assert kwargs == {
+                "include_formats": False,
+                "include_sources": True,
+                "country": None,
+                "region": "EMEA",
+            }
+            return DiscoveryResult(
+                execution_timestamp="2026-07-22T00:00:00Z",
+                country=None,
+                region="EMEA",
+                include_formats=False,
+                include_sources=True,
+                formats=[],
+                sources=[{"id": "no-brreg", "country": "NO", "active": True, "jurisdictions": ["NO"], "coverage": ["full"], "name": "Brreg"}],
+            )
+
+        def close(self) -> None:
+            """Match the real cleanup interface."""
+
+    monkeypatch.setattr(
+        "verifyvat_cli.main.DiscoveryService.from_environment",
+        lambda: FakeDiscoveryService(),
+    )
+
+    exit_code = cli_main.main(["discovery", "--sources", "--region", "EMEA"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "VerifyVAT Discovery" in captured.out
+    assert "Registry Sources" in captured.out
+    assert "Supported Formats" not in captured.out
+    assert captured.err == ""
+
+
+def test_discovery_json_reports_config_error_when_api_key_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Discovery JSON mode should return a machine-readable config error payload."""
+
+    def raise_config_error() -> None:
+        raise ConfigError("Missing VERIFYVAT_API_KEY. Export the environment variable and retry.")
+
+    monkeypatch.setattr("verifyvat_cli.main.DiscoveryService.from_environment", raise_config_error)
+
+    exit_code = cli_main.main(["discovery", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.err == ""
+    payload = json.loads(captured.out)
+    assert payload["discovery_result"]["status"] == "CONFIG_ERROR"
+    assert "VERIFYVAT_API_KEY" in payload["discovery_result"]["diagnostics"][0]
+
+
+def test_main_returns_invalid_exit_code_for_keyboard_interrupt(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """User interruption should not be classified as a network failure."""
+
+    def raise_keyboard_interrupt(*args: object, **kwargs: object) -> VerificationResult:
+        del args, kwargs
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli_main, "verify_once", raise_keyboard_interrupt)
+
+    exit_code = cli_main.main(["check", "914778271"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Interrupted by user." in captured.err
+
+
+def test_main_returns_config_exit_code_for_uncaught_config_error(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Top-level ConfigError fallback should stay distinct from network failures."""
+
+    def raise_config_error(*args: object, **kwargs: object) -> VerificationResult:
+        del args, kwargs
+        raise ConfigError("Missing VERIFYVAT_API_KEY. Export the environment variable and retry.")
+
+    monkeypatch.setattr(cli_main, "verify_once", raise_config_error)
+
+    exit_code = cli_main.main(["check", "914778271"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "VERIFYVAT_API_KEY" in captured.err

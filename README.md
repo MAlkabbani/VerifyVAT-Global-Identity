@@ -25,7 +25,7 @@ Use the following terms consistently across the repository:
 
 This application requires Python 3.13 or higher. We recommend using the uv package manager for dependency resolution.
 
-The currently shipped command surface includes `check`, `bulk`, and `audit`. The `discovery` command remains planned follow-on work and is still documented as roadmap scope only.
+The currently shipped command surface includes `check`, `bulk`, `audit`, and `discovery`.
 
 1. Clone the repository:
 
@@ -188,7 +188,42 @@ The `audit` command is intentionally local-only:
 - It supports human-readable table output by default.
 - It can export the selected rows as CSV for downstream review.
 
-The remaining follow-on command is `discovery`, which stays deferred until the team documents the exact supported source/format contract.
+### Inspecting Supported Formats and Sources
+
+The `discovery` command lists supported identifier formats and registry sources through the official SDK discovery endpoints. We shipped both sections by default so operators can inspect the format catalog and the backing registries in one pass, while still allowing narrower views with flags.
+
+Show both supported formats and sources:
+
+```bash
+verifyvat discovery
+```
+
+Show only formats for one jurisdiction:
+
+```bash
+verifyvat discovery --formats --country NO
+```
+
+Show only sources for one region:
+
+```bash
+verifyvat discovery --sources --region EMEA
+```
+
+Emit machine-readable JSON:
+
+```bash
+verifyvat discovery --country NO --json
+```
+
+The `discovery` command in this slice:
+
+- uses `--formats` and `--sources` to narrow the output, while defaulting to both sections when neither flag is supplied.
+- supports `--country` and `--region` filters for a practical first-pass lookup surface.
+- supports `--json` and writes exactly one machine-readable object to stdout.
+- does not write to the local audit database because it is metadata inspection, not a verification event.
+
+The remaining follow-on work after this slice is discovery-depth expansion, such as richer freshness metadata or additional filter surfaces, if the provider contract requires them.
 
 ## Licensing and Contributions
 

@@ -43,6 +43,6 @@ The implementation should be built and verified in the following order:
 7. Bulk CSV processing.
 8. Audit query and export flows.
 
-The currently shipped implementation now includes audit-query and export flows in addition to bulk CSV processing and durable audit writes. We intentionally deferred `discovery` so the first follow-on slice could stay entirely local to the existing SQLite evidence boundary.
+The currently shipped implementation now includes audit-query and export flows in addition to bulk CSV processing, durable audit writes, and the `discovery` metadata slice. We still keep the architecture disciplined: verification and discovery stay inside the SDK-facing core layer, while `main.py` remains responsible for parsing and rendering.
 
 The flow of data through the system is strictly linear. Input enters through the Presentation Layer, is sanitized by the Controller, and is transmitted outward by the API Wrapper. After a response is received, the API Wrapper returns a structured object to the Controller. The Controller serializes this state, whether it represents a successful validation or an upstream error, and dispatches it to the Storage Engine. Only after the audit log is committed to disk does the Presentation Layer render the final output to the operator. This ordering guarantees that no visual confirmation is provided unless the compliance evidence is preserved.

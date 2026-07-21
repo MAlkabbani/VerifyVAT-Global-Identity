@@ -6,7 +6,7 @@ import httpx
 
 import pytest
 
-from verifyvat_cli.core import VerificationService, normalize_identifier, verify_once
+from verifyvat_cli.core import DiscoveryService, VerificationService, normalize_identifier, verify_once
 
 
 class FakeClient:
@@ -136,3 +136,85 @@ def test_verification_service_maps_timeout_to_network_error() -> None:
     assert result.status == "NETWORK_ERROR"
     assert result.persisted_status == "NETWORK_ERROR"
     assert result.diagnostics == ["timed out"]
+
+
+def test_discovery_service_lists_formats_and_sources() -> None:
+    """Discovery should serialize both supported ID types and registry sources."""
+
+    class Envelope:
+        """Tiny response envelope compatible with the SDK helpers."""
+
+        def __init__(self, data: dict[str, object]) -> None:
+            self.data = data
+
+    class DiscoveryClient(FakeClient):
+        """Client stub that returns synthetic domain-graph payloads."""
+
+        def post(self, path: str, body: dict[str, object], **_: object) -> Envelope:
+            """Return a small synthetic response envelope for discovery endpoints."""
+
+            if path == "/id-types":
+                assert body["country"] == "NO"
+                assert body["region"] == "EMEA"
+                return Envelope(
+                    {
+                        "types": [
+                            {
+                                "id": "no_orgnr",
+                                "acronym": "ORGNR",
+                                "name": "Organisasjonsnummer",
+                                "format": ["000 000 000"],
+                                "country": "NO",
+                                "region": "EMEA",
+                                "validation": "registry",
+                                "sources": [{"id": "no-brreg", "coverage": "full"}],
+                            }
+                        ]
+                    }
+                )
+            if path == "/sources":
+                assert body["country"] == "NO"
+                assert body["group"] == "EMEA"
+                return Envelope(
+                    {
+                        "sources": [
+                            {
+                                "id": "no-brreg",
+                                "acronym": "BRREG",
+                                "name": "Brreg",
+                                "country": "NO",
+                                "active": True,
+                                "jurisdictions": ["NO"],
+                                "types": [
+                                    {
+                                        "id": "no_orgnr",
+                                        "acronym": "ORGNR",
+                                        "name": "Organisasjonsnummer",
+                                        "format": ["000 000 000"],
+                                        "country": "NO",
+                                        "region": "EMEA",
+                                        "validation": "registry",
+                                        "coverage": "full",
+                                    }
+                                ],
+                            }
+                        ]
+                    }
+                )
+            raise AssertionError(f"Unexpected path: {path}")
+
+    service = DiscoveryService(client=DiscoveryClient())
+
+    result = service.discover(
+        include_formats=True,
+        include_sources=True,
+        country="no",
+        region="emea",
+    )
+
+    assert result.country == "NO"
+    assert result.region == "EMEA"
+    assert result.formats[0]["id"] == "no_orgnr"
+    assert result.formats[0]["coverage"] == "full"
+    assert result.sources[0]["id"] == "no-brreg"
+    assert result.sources[0]["active"] is True
