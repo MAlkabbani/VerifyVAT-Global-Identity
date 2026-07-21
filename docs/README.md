@@ -14,7 +14,7 @@ An enterprise-grade, terminal-based application designed to validate and enrich 
 
 This application strictly requires Python 3.13 or higher. We highly recommend utilizing the uv package manager for rapid dependency resolution.
 
-> 1. Clone the repository to your local machine:bash git clone [https://github.com/YOUR\_ORG/verifyvat-cli](https://github.com/MAlkabbani/VerifyVAT-Global-Identity.git cd VerifyVAT-Global-Identity  
+> 1. Clone the repository to your local machine:bash git clone [https://github.com/MAlkabbani/VerifyVAT-Global-Identity](https://github.com/MAlkabbani/VerifyVAT-Global-Identity.git) cd VerifyVAT-Global-Identity  
 > 2. Initialize the virtual environment and install all required dependencies:  
 >    Bash  
 >    uv venv  
