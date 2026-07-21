@@ -6,10 +6,10 @@ The foundation of the application rests on Python 3.13 or higher. This version i
 
 The software architecture is segmented into four loosely coupled layers:
 
-> 1. **The Presentation and Routing Layer:** This subsystem uses argparse, or optionally Click or Typer, to interpret command-line arguments, parse operational flags, and construct the initial execution context. It is responsible for standard output rendering and uses Rich for readable terminal tables, or standard string serialization when strict JSON output is requested.
+> 1. **The Presentation and Routing Layer:** This subsystem uses argparse to interpret command-line arguments, parse operational flags, and construct the initial execution context. It is responsible for standard output rendering and uses Rich for readable terminal tables, or standard string serialization when strict JSON output is requested.
 > 2. **The Core Controller Logic:** This layer receives the parsed arguments and executes the primary business logic. It handles normalization of user inputs, stripping whitespace and obvious syntactical errors. It determines whether to invoke the inference API before verification or proceed directly to the verification API based on the supplied flags.
 > 3. **The API Integration Wrapper:** This module encapsulates all interactions with the external VerifyVAT network. It is the only component permitted to read the VERIFYVAT_API_KEY from the system environment. It instantiates the VerifyVatClient, TypeInferrer, and Verifier SDK classes. This layer acts as an anti-corruption layer by catching raw HTTP exceptions, network timeouts, and JSON parsing errors, then translating them into safe domain exceptions.
-> 4. **The Embedded Storage Engine:** To satisfy the audit requirements, this layer manages connections to a local SQLite database stored in the user's home directory, such as ~/.verifyvat/audit_logs.db. SQLite is chosen because it requires zero configuration, works well inside a standalone CLI package, and supports JSON field types.
+> 4. **The Embedded Storage Engine:** To satisfy the audit requirements, this layer manages connections to a local SQLite database stored in the user's home directory at `~/.verifyvat/audit.db`. SQLite is chosen because it requires zero configuration, works well inside a standalone CLI package, and supports durable local evidence retention.
 
 ### Security Boundaries
 
@@ -42,5 +42,7 @@ The implementation should be built and verified in the following order:
 6. `--json` rendering contract.
 7. Bulk CSV processing.
 8. Audit query and export flows.
+
+The current phase-1 implementation stops after bulk CSV processing and durable audit writes. Audit-query and discovery-command behavior remain planned follow-on slices.
 
 The flow of data through the system is strictly linear. Input enters through the Presentation Layer, is sanitized by the Controller, and is transmitted outward by the API Wrapper. After a response is received, the API Wrapper returns a structured object to the Controller. The Controller serializes this state, whether it represents a successful validation or an upstream error, and dispatches it to the Storage Engine. Only after the audit log is committed to disk does the Presentation Layer render the final output to the operator. This ordering guarantees that no visual confirmation is provided unless the compliance evidence is preserved.

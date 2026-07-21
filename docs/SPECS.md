@@ -72,9 +72,9 @@ The API supports multiple authentication mechanisms, but this CLI should standar
 Each CLI command must have a clear execution contract:
 
 - `verifyvat check [ID]`: Accepts one raw identifier, optionally accepts `--country` and `--type`, performs normalization, optional inference, verification, audit logging, and final rendering.
-- `verifyvat bulk [FILE]`: Accepts a CSV input file, processes identifiers row by row, writes an enriched CSV output, and records each attempted verification in SQLite.
-- `verifyvat discovery`: Returns supported formats and/or sources without mutating the audit database unless the team later documents a reason to log discovery operations.
-- `verifyvat audit`: Reads from SQLite only and must not perform remote verification requests.
+- `verifyvat bulk [FILE]`: Accepts a CSV input file with at least an `identifier` column, processes identifiers row by row, writes an enriched CSV output, and records each attempted verification in SQLite.
+- `verifyvat discovery`: Planned follow-on command. It will return supported formats and/or sources without mutating the audit database unless the team later documents a reason to log discovery operations.
+- `verifyvat audit`: Planned follow-on command. It will read from SQLite only and must not perform remote verification requests.
 
 ### Output Contract
 
@@ -85,6 +85,7 @@ The output contract must stay stable across implementations:
 - Non-data output, such as progress messages or warnings, must go to stderr or be suppressed when `--json` is enabled.
 - Output structures must preserve the distinction between raw identifier, normalized identifier, inferred type, verification result, and audit metadata.
 - Secret values, auth headers, and unredacted credential material must never appear in any output mode.
+- For phase 1 bulk execution, `--json` may emit a summary object while the row-level detail remains in the enriched CSV output.
 
 ### Error-State Contract
 
@@ -123,9 +124,9 @@ The CLI will expose a primary entry point, verifyvat, followed by discrete subco
 | Command Syntax | Operational Purpose | Key Arguments and Flags |
 | :---- | :---- | :---- |
 | verifyvat check [ID] | Executes a real-time validation against a single business identifier. | --country [ISO_CODE], --type [EXACT_FORMAT], --json |
-| verifyvat bulk [FILE] | Ingests a CSV file, processes identifiers, and emits an enriched output file. | --output [FILE_PATH], --delay [SECONDS] |
-| verifyvat discovery | Queries auxiliary endpoints to list supported jurisdictions and registry freshness. | --sources, --formats |
-| verifyvat audit | Queries the local SQLite database to retrieve historical validation evidence. | --limit [INT], --export-csv |
+| verifyvat bulk [FILE] | Ingests a CSV file, processes identifiers, and emits an enriched output file. | --output [FILE_PATH], --delay [SECONDS], --json |
+| verifyvat discovery | Planned follow-on command for supported jurisdiction and registry freshness lookup. | --sources, --formats |
+| verifyvat audit | Planned follow-on command for local audit retrieval. | --limit [INT], --export-csv |
 
 *Table 3: CLI Command Hierarchy and Subcommand Architecture*
 

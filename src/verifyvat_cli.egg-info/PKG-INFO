@@ -1,3 +1,16 @@
+Metadata-Version: 2.4
+Name: verifyvat-cli
+Version: 0.1.0
+Summary: Terminal-based VerifyVAT CLI for global business identifier validation.
+Requires-Python: >=3.13
+Description-Content-Type: text/markdown
+Requires-Dist: rich>=13.9.4
+Requires-Dist: verifyvat-sdk>=0.1.0
+Provides-Extra: dev
+Requires-Dist: mypy>=1.18.1; extra == "dev"
+Requires-Dist: pytest>=8.4.1; extra == "dev"
+Requires-Dist: ruff>=0.12.4; extra == "dev"
+
 # VerifyVAT Global Identity CLI
 
 An enterprise-grade, terminal-based application designed to validate and enrich global business identifiers (VAT, GST, TRN) by cross-referencing official government registries in real time. Built upon the official VerifyVAT Python SDK, this tool provides instant syntactical checks, registry status verification, and automatic local audit logging to support strict financial compliance for cross-border B2B transactions.
@@ -25,8 +38,6 @@ Use the following terms consistently across the repository:
 
 This application requires Python 3.13 or higher. We recommend using the uv package manager for dependency resolution.
 
-The current phase-1 implementation scope ships the `check` and `bulk` commands first. The `audit` and `discovery` commands remain planned follow-on work and are documented for the broader product roadmap rather than the initial code skeleton.
-
 1. Clone the repository:
 
    ```bash
@@ -37,7 +48,8 @@ The current phase-1 implementation scope ships the `check` and `bulk` commands f
 2. Create the virtual environment and install dependencies:
 
    ```bash
-   uv sync
+   uv venv
+   uv pip install -r requirements.txt
    ```
 
 ## Security and Authentication Configuration
@@ -87,14 +99,12 @@ Ingest a CSV containing raw identifiers and output an enriched dataset.
 verifyvat bulk ./inputs/legacy_suppliers.csv --output ./enriched_suppliers.csv
 ```
 
-Phase 1 bulk mode expects an input CSV with an `identifier` column. Optional `country` and `type` columns may be supplied per row. The output CSV preserves the original columns and appends `normalized_identifier`, `inferred_type`, `internal_status`, `legal_name`, `address`, `consultation_receipt`, `diagnostics`, and `execution_timestamp`.
-
 ### Retrieving Audit Evidence
 
-Phase 1 writes audit records to `~/.verifyvat/audit.db` for every handled `check` result and every attempted bulk row. A dedicated `audit` command is planned follow-on work.
+Query the local SQLite database to review historical validation attempts.
 
 ```bash
-sqlite3 ~/.verifyvat/audit.db "SELECT * FROM verification_logs ORDER BY transaction_id DESC LIMIT 10;"
+verifyvat audit --limit 10
 ```
 
 ## Licensing and Contributions

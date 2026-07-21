@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=80.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "verifyvat-cli"
+version = "0.1.0"
+description = "Terminal-based VerifyVAT CLI for global business identifier validation."
+readme = "docs/README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "rich>=13.9.4",
+  "verifyvat-sdk>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.18.1",
+  "pytest>=8.4.1",
+  "ruff>=0.12.4",
+]
+
+[project.scripts]
+verifyvat = "verifyvat_cli.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["verifyvat_sdk", "verifyvat_sdk.*"]
+ignore_missing_imports = true

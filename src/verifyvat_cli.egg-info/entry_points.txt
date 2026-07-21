@@ -1,0 +1,2 @@
+[console_scripts]
+verifyvat = verifyvat_cli.main:main
