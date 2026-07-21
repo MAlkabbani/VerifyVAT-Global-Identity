@@ -19,4 +19,28 @@ The software architecture is segmented into four loosely coupled layers:
 - The network boundary must use HTTPS, explicit timeouts, and bounded retry rules.
 - Although the VerifyVAT API supports multiple authentication mechanisms, the CLI standard is environment-backed, header-based authentication through the SDK.
 
+### Ownership Boundaries
+
+These ownership boundaries are part of the build contract:
+
+- Argument parsing, flag validation, and command dispatch belong to the Presentation Layer.
+- Input normalization, inference selection, verification orchestration, and domain-level error mapping belong to the Core Controller Logic.
+- SDK client creation and external network communication belong to the API Integration Wrapper.
+- SQLite schema creation, writes, and historical reads belong to the Embedded Storage Engine.
+
+No layer should absorb another layer's responsibilities for convenience. This keeps the CLI testable and preserves security boundaries around credentials and persistence.
+
+### Build Order
+
+The implementation should be built and verified in the following order:
+
+1. SQLite schema initialization and audit-write path.
+2. SDK client bootstrap and authentication validation.
+3. Single-ID verification flow with explicit type support.
+4. Type inference flow for unknown identifiers.
+5. Human-readable rendering.
+6. `--json` rendering contract.
+7. Bulk CSV processing.
+8. Audit query and export flows.
+
 The flow of data through the system is strictly linear. Input enters through the Presentation Layer, is sanitized by the Controller, and is transmitted outward by the API Wrapper. After a response is received, the API Wrapper returns a structured object to the Controller. The Controller serializes this state, whether it represents a successful validation or an upstream error, and dispatches it to the Storage Engine. Only after the audit log is committed to disk does the Presentation Layer render the final output to the operator. This ordering guarantees that no visual confirmation is provided unless the compliance evidence is preserved.

@@ -40,6 +40,21 @@ When processing an identifier of unknown provenance, the system must call TypeIn
 
 During verification, Verifier.verify_id requires both the resolved type and the normalized identifier. The returned verification object contains nested state, and the application must use Verifier.describe_verification to extract human-readable diagnostics. The code must also handle cases where the registry confirms active status but redacts the entity's legal name and address. The application must handle None values gracefully during terminal rendering and database insertion.
 
+### Module Contract
+
+The initial implementation should keep module boundaries narrow and predictable:
+
+- `main.py`: CLI entry point, argument parsing, command dispatch, exit code selection, and output-mode routing.
+- `core.py`: Input normalization, type inference flow, verification flow, error mapping, and response shaping.
+- `db.py`: SQLite initialization, schema management, audit-record inserts, and audit-query helpers.
+
+The contract between these modules should be explicit:
+
+- `main.py` must not call the SDK directly.
+- `db.py` must not perform network requests.
+- `core.py` must return structured results that can be rendered in either human-readable or JSON mode.
+- Cross-module data exchange should use typed Python structures rather than ad hoc dictionaries where practical.
+
 ### API Security Requirements
 
 The API supports multiple authentication mechanisms, but this CLI should standardize on the safest path for production use.
@@ -51,6 +66,51 @@ The API supports multiple authentication mechanisms, but this CLI should standar
 - Do not persist API keys, auth headers, or secret-bearing request metadata in the audit database.
 - Redact secrets from debug output, tracebacks, support bundles, and exported diagnostics.
 - Apply explicit timeouts and bounded retries to remote calls, and classify timeouts separately from invalid identifiers.
+
+### Command Contract
+
+Each CLI command must have a clear execution contract:
+
+- `verifyvat check [ID]`: Accepts one raw identifier, optionally accepts `--country` and `--type`, performs normalization, optional inference, verification, audit logging, and final rendering.
+- `verifyvat bulk [FILE]`: Accepts a CSV input file, processes identifiers row by row, writes an enriched CSV output, and records each attempted verification in SQLite.
+- `verifyvat discovery`: Returns supported formats and/or sources without mutating the audit database unless the team later documents a reason to log discovery operations.
+- `verifyvat audit`: Reads from SQLite only and must not perform remote verification requests.
+
+### Output Contract
+
+The output contract must stay stable across implementations:
+
+- Human-readable mode may render tables, colors, short summaries, and progress indicators.
+- `--json` mode must write exactly one machine-readable result object per command invocation to stdout.
+- Non-data output, such as progress messages or warnings, must go to stderr or be suppressed when `--json` is enabled.
+- Output structures must preserve the distinction between raw identifier, normalized identifier, inferred type, verification result, and audit metadata.
+- Secret values, auth headers, and unredacted credential material must never appear in any output mode.
+
+### Error-State Contract
+
+Handled failures must map to consistent internal categories:
+
+- `VALID`: The identifier was verified successfully.
+- `INVALID`: The identifier completed verification but was not valid according to the provider or registry.
+- `NETWORK_ERROR`: The request could not be completed reliably because of transport, timeout, upstream availability, or similar runtime failures.
+- `CONFIG_ERROR`: The command could not start correctly because required local configuration was missing or invalid.
+
+If implementation constraints require storing only three states in SQLite, `CONFIG_ERROR` must still remain distinguishable in the in-memory result and user-facing output, even if it is folded into a broader persisted status later.
+
+### Processing Order Contract
+
+The runtime flow for verification commands must follow this order:
+
+1. Parse command arguments and validate local configuration.
+2. Capture the raw identifier.
+3. Normalize input into a normalized identifier.
+4. Infer the type when an explicit type is not supplied.
+5. Execute verification through the SDK.
+6. Map the provider response into the internal verification result.
+7. Persist the audit record.
+8. Render user-facing output.
+
+This order is intentional. It preserves a durable audit trail and keeps rendering concerns separate from verification logic.
 
 ## Terminal User Experience and Interface Design
 

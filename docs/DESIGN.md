@@ -29,3 +29,21 @@ If the operator appends the --json flag to any command, all visual formatting, s
 - `--json` mode must write only the verification result to stdout.
 - Secrets, auth headers, and raw credential values must never appear in terminal output.
 - Debug output must redact sensitive values before printing.
+
+### CLI UX Contract
+
+The CLI interface should behave consistently enough that a developer or agent can depend on it:
+
+- Commands must use predictable flag names and avoid aliases unless the docs explicitly declare them.
+- A missing API key must produce an actionable setup message rather than a traceback.
+- Invalid user input must produce a concise explanation of what failed and, when possible, how to correct it.
+- Spinner or progress behavior must stop before final output is rendered.
+- Human-readable success output should show the minimum useful fields: status, inferred or supplied type, legal entity when available, address when available, and consultation receipt when available.
+- Human-readable failure output should state whether the problem was validation, configuration, or network related.
+
+### Bulk Processing UX Contract
+
+- Bulk mode must make it obvious which input file was processed and where the output file was written.
+- Row-level failures must not silently disappear; they must appear either in the output CSV, the audit database, or both.
+- Bulk mode should continue through recoverable row-level failures and summarize outcomes at the end.
+- If a failure is global and unrecoverable, such as a missing API key or unreadable input file, the command should fail early with a clear message.
