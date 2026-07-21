@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "verifyvat-cli"
 version = "0.1.0"
 description = "Terminal-based VerifyVAT CLI for global business identifier validation."
-readme = "docs/README.md"
+readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
   "rich>=13.9.4",

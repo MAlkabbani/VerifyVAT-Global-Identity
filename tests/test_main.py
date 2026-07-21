@@ -345,3 +345,30 @@ def test_main_returns_config_exit_code_for_uncaught_config_error(
 
     assert exit_code == 2
     assert "VERIFYVAT_API_KEY" in captured.err
+
+
+def test_root_help_includes_examples(capsys: pytest.CaptureFixture[str]) -> None:
+    """The root parser help should guide first-run usage with concrete examples."""
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli_main.main(["--help"])
+
+    captured = capsys.readouterr()
+
+    assert exc_info.value.code == 0
+    assert "Verify global business identifiers" in captured.out
+    assert "verifyvat check 914778271 --type no_orgnr --json" in captured.out
+    assert "verifyvat discovery --country NO --json" in captured.out
+
+
+def test_discovery_help_explains_default_behavior(capsys: pytest.CaptureFixture[str]) -> None:
+    """Discovery help should explain that the command shows both sections by default."""
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli_main.main(["discovery", "--help"])
+
+    captured = capsys.readouterr()
+
+    assert exc_info.value.code == 0
+    assert "Defaults to showing both sections" in captured.out
+    assert "verifyvat discovery --formats --country NO" in captured.out

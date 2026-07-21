@@ -81,12 +81,27 @@ DISCOVERY_SOURCE_COLUMNS = [
     ("coverage", "Coverage"),
     ("name", "Name"),
 ]
+ROOT_HELP_EPILOG = """Examples:
+  verifyvat check 914778271 --type no_orgnr --json
+  verifyvat check 914778271 --country NO
+  verifyvat bulk ./inputs/vendors.csv --output ./outputs/vendors_enriched.csv
+  verifyvat audit --limit 10
+  verifyvat discovery --country NO --json
+"""
 
 
 def build_parser() -> argparse.ArgumentParser:
     """Create the top-level CLI parser."""
 
-    parser = argparse.ArgumentParser(prog="verifyvat")
+    parser = argparse.ArgumentParser(
+        prog="verifyvat",
+        description=(
+            "Verify global business identifiers through the official VerifyVAT SDK, "
+            "with local audit logging and automation-safe JSON output."
+        ),
+        epilog=ROOT_HELP_EPILOG,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
         "--debug",
         action="store_true",
@@ -95,7 +110,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    check_parser = subparsers.add_parser("check", help="Verify one raw identifier.")
+    check_parser = subparsers.add_parser(
+        "check",
+        help="Verify one raw identifier.",
+        description=(
+            "Verify a single raw identifier. Use --type when you know the exact "
+            "VerifyVAT type, or use --country to let the CLI infer the best type."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  verifyvat check 914778271 --type no_orgnr --json\n"
+            "  verifyvat check 914778271 --country NO\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     check_parser.add_argument("identifier", help="Raw identifier to verify.")
     check_parser.add_argument("--country", help="Optional ISO country hint.")
     check_parser.add_argument("--type", dest="explicit_type", help="Known exact identifier type.")
@@ -106,7 +134,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     check_parser.set_defaults(handler=handle_check)
 
-    bulk_parser = subparsers.add_parser("bulk", help="Verify identifiers from a CSV file.")
+    bulk_parser = subparsers.add_parser(
+        "bulk",
+        help="Verify identifiers from a CSV file.",
+        description=(
+            "Verify many identifiers from a CSV file. The input must include an "
+            "`identifier` column and may optionally include `country` and `type` columns."
+        ),
+        epilog=(
+            "Example:\n"
+            "  verifyvat bulk ./inputs/vendors.csv --output ./outputs/vendors_enriched.csv\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     bulk_parser.add_argument("input_file", help="Path to the input CSV file.")
     bulk_parser.add_argument("--output", required=True, help="Path to the enriched output CSV file.")
     bulk_parser.add_argument(
@@ -122,7 +162,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     bulk_parser.set_defaults(handler=handle_bulk)
 
-    audit_parser = subparsers.add_parser("audit", help="Read recent local audit records.")
+    audit_parser = subparsers.add_parser(
+        "audit",
+        help="Read recent local audit records.",
+        description=(
+            "Read recent verification audit records from the local SQLite database. "
+            "This command is local-only and does not call the VerifyVAT API."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  verifyvat audit --limit 10\n"
+            "  verifyvat audit --limit 10 --export-csv ./exports/audit-history.csv\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     audit_parser.add_argument(
         "--limit",
         type=_positive_int,
@@ -138,6 +191,18 @@ def build_parser() -> argparse.ArgumentParser:
     discovery_parser = subparsers.add_parser(
         "discovery",
         help="Inspect supported formats and registry sources.",
+        description=(
+            "Inspect supported identifier formats and registry sources through the "
+            "VerifyVAT discovery endpoints. Defaults to showing both sections."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  verifyvat discovery\n"
+            "  verifyvat discovery --formats --country NO\n"
+            "  verifyvat discovery --sources --region EMEA\n"
+            "  verifyvat discovery --country NO --json\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     discovery_parser.add_argument(
         "--formats",

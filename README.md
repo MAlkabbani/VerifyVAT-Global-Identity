@@ -1,14 +1,32 @@
 # VerifyVAT Global Identity CLI
 
-An enterprise-grade, terminal-based application designed to validate and enrich global business identifiers (VAT, GST, TRN) by cross-referencing official government registries in real time. Built upon the official VerifyVAT Python SDK, this tool provides instant syntactical checks, registry status verification, and automatic local audit logging to support strict financial compliance for cross-border B2B transactions.
+VerifyVAT CLI is a Python command-line application for validating and enriching business identifiers through the official VerifyVAT SDK. It supports single checks, CSV bulk processing, local audit evidence, and metadata discovery for supported formats and registries.
 
-## Strategic Capabilities
+## Start Here
 
-- Deterministic Validation: Replaces guesswork with registry-backed proof, validating syntax and checking active status directly against authoritative sources.
-- Intelligent Type Inference: Automatically deduces the jurisdiction and format type of raw strings while handling messy user input gracefully.
-- Immutable Audit Logging: Preserves timestamps, consultation receipts, and raw provider payloads in an embedded SQLite database for audit readiness.
-- Bulk Operations: Processes CSV files containing thousands of legacy IDs and generates enriched datasets with legal names and addresses for ERP ingestion.
-- Automation Ready: Emits structured JSON payloads via the `--json` flag for integration into CI/CD pipelines, backend cron jobs, or shell scripts.
+If you are new to the repository:
+
+- Read the beginner-friendly guide: [GETTING_STARTED_GUIDE.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/GETTING_STARTED_GUIDE.md)
+- Review the shipped implementation scope: [IMPLEMENTATION_PLAN.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/IMPLEMENTATION_PLAN.md)
+- Review the next refinement phases: [REFINEMENT_ROADMAP.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/REFINEMENT_ROADMAP.md)
+
+## What It Does
+
+- Deterministic validation: checks syntax and registry-backed status for supported identifiers
+- Type inference: infers the best VerifyVAT type from a raw identifier plus a country hint
+- Local audit logging: writes verification evidence to SQLite for review and export
+- Bulk processing: reads identifiers from CSV and writes enriched output CSVs
+- Discovery: inspects supported identifier formats and source registries
+- Automation-safe JSON: keeps `--json` output machine-readable on stdout
+
+## Command Surface
+
+The currently shipped commands are:
+
+- `verifyvat check`
+- `verifyvat bulk`
+- `verifyvat audit`
+- `verifyvat discovery`
 
 ## Canonical Terminology
 
@@ -23,30 +41,23 @@ Use the following terms consistently across the repository:
 
 ## Installation and Environment Setup
 
-This application requires Python 3.13 or higher. We recommend using the uv package manager for dependency resolution.
-
-The currently shipped command surface includes `check`, `bulk`, `audit`, and `discovery`.
+This repository requires Python `3.13` or higher. We recommend `uv`, but a standard `venv` and `pip` path is also fully supported.
 
 1. Clone the repository:
 
-   ```bash
-   git clone https://github.com/MAlkabbani/VerifyVAT-Global-Identity.git
-   cd VerifyVAT-Global-Identity
-   ```
+```bash
+git clone https://github.com/MAlkabbani/VerifyVAT-Global-Identity.git
+cd VerifyVAT-Global-Identity
+```
 
-2. Create the virtual environment and install dependencies:
+2. Preferred setup path:
 
-   ```bash
-   uv sync
-   ```
+```bash
+uv sync
+source .venv/bin/activate
+```
 
-3. Activate the local virtual environment so the repo-local `verifyvat` command is available:
-
-   ```bash
-   source .venv/bin/activate
-   ```
-
-If `uv` is not installed on your machine, use the standard-library fallback that matches the working local setup:
+3. Fallback setup path when `uv` is not installed:
 
 ```bash
 python3 -m venv .venv
@@ -55,13 +66,13 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ```
 
-After activation, you can run the CLI as:
+4. Confirm the repo-local CLI works:
 
 ```bash
 verifyvat --help
 ```
 
-If you do not want to activate the virtual environment, invoke the local entrypoint directly:
+If you prefer not to activate the virtual environment, use the local entrypoint directly:
 
 ```bash
 ./.venv/bin/verifyvat --help
@@ -90,11 +101,13 @@ If you accidentally paste or expose a live key in terminal history, screenshots,
 - Prefer header-based authentication and do not place secrets in URLs, query strings, or copied example commands.
 - Redact secrets from debug output, error reports, and exported diagnostics.
 
+For a fuller onboarding flow, use [GETTING_STARTED_GUIDE.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/GETTING_STARTED_GUIDE.md).
+
 ## Operational Usage
 
 ### Quick Smoke Test
 
-This is the shortest working end-to-end flow for the local CLI:
+This is the shortest working end-to-end local smoke test:
 
 ```bash
 cd /path/to/VerifyVAT-Global-Identity
@@ -102,9 +115,10 @@ source .venv/bin/activate
 export VERIFYVAT_API_KEY="your_secure_api_key_here"
 verifyvat check 914778271 --type no_orgnr --json
 verifyvat check 914778271 --country NO --json
+verifyvat discovery --country NO --json
 ```
 
-The first command verifies the documented Norwegian organization number directly. The second command exercises the infer-then-verify path using a country hint.
+The first command verifies a documented Norwegian organization number directly. The second command exercises inference. The third confirms the discovery endpoints.
 
 ### Validating a Single Identifier
 
@@ -223,7 +237,22 @@ The `discovery` command in this slice:
 - supports `--json` and writes exactly one machine-readable object to stdout.
 - does not write to the local audit database because it is metadata inspection, not a verification event.
 
-The remaining follow-on work after this slice is discovery-depth expansion, such as richer freshness metadata or additional filter surfaces, if the provider contract requires them.
+## Junior Developer Notes
+
+If you are onboarding to this repository for the first time:
+
+- use the local `.venv` path first instead of assuming a global install
+- use the documented sample before testing a real company identifier
+- prefer `--type` when you know the exact VerifyVAT type
+- use `--country` when you need inference
+- inspect `audit` when you want proof of what was persisted locally
+
+## Documentation Map
+
+- Beginner onboarding and full usage guide: [GETTING_STARTED_GUIDE.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/GETTING_STARTED_GUIDE.md)
+- Shipped implementation contract: [IMPLEMENTATION_PLAN.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/IMPLEMENTATION_PLAN.md)
+- Next refinement phases: [REFINEMENT_ROADMAP.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/REFINEMENT_ROADMAP.md)
+- Product and architecture context: [PRD.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/PRD.md), [ARCHITECTURE.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/ARCHITECTURE.md), [DESIGN.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/DESIGN.md), [SPECS.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/SPECS.md)
 
 ## Licensing and Contributions
 
