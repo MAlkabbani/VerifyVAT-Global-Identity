@@ -1,8 +1,3 @@
-## **Open-Source Onboarding Guide (README.md)**
-
-The README serves as the definitive landing page, orienting new developers and users to the project's purpose, installation procedures, and operational syntax.  
-**Proposed README Structure and Content:**
-
 # **VerifyVAT Global Identity CLI**
 
 An enterprise-grade, terminal-based application designed to validate and enrich global business identifiers (VAT, GST, TRN) by cross-referencing over 41 official government registries in real-time. Built upon the official VerifyVAT Python SDK, this tool provides instant syntactical checks, registry status verification, and automatic local audit logging to ensure strict financial compliance for cross-border B2B transactions.
