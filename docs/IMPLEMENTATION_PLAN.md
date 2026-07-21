@@ -6,12 +6,13 @@ This document captures the approved phase-1 implementation choices for the Verif
 
 ## Phase-1 Scope
 
-The first implementation phase ships the Python CLI skeleton for:
+The currently shipped implementation phase includes the Python CLI skeleton for:
 
 - `verifyvat check`
 - `verifyvat bulk`
+- `verifyvat audit`
 
-The broader product surface still includes `audit` and `discovery`, but those commands remain follow-on work until their behavior is implemented.
+The broader product surface still includes `discovery`, but that command remains follow-on work until its behavior is implemented.
 
 ## Locked Choices
 
@@ -29,7 +30,7 @@ The broader product surface still includes `audit` and `discovery`, but those co
 
 - `src/` packaging gives the project a clean installable `verifyvat` command surface.
 - `pyproject.toml` plus `uv sync` matches the repository's Python 3.13 and `uv` direction better than an ad hoc `requirements.txt` flow.
-- Limiting phase 1 to `check` and `bulk` keeps the implementation faithful to `docs/PROMPT.md` while still meeting the documented acceptance bar.
+- Shipping `audit` immediately after `check` and `bulk` closes the local compliance loop before expanding into remote metadata discovery.
 - Narrow module boundaries keep secret handling, audit writes, and rendering responsibilities explicit.
 
 ## Delivery Order
@@ -70,6 +71,5 @@ Bulk mode writes the original columns plus:
 
 ## Deferred Follow-On Work
 
-- Add the `audit` command for local history reads and export.
 - Add the `discovery` command for supported formats and registry/source inspection.
-- Expand operational docs once those commands ship.
+- Expand operational docs once `discovery` ships.

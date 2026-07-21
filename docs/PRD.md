@@ -18,7 +18,7 @@ The CLI must also enforce a secure authentication posture. It must read `VERIFYV
 
 The scope of the application is limited to validation and local auditing. It will not manage user billing, account creation, or API key provisioning; those responsibilities remain in the VerifyVAT web platform.
 
-The current phase-1 implementation scope delivers `check` and `bulk` first. Audit-query and discovery-command behavior remain planned follow-on work after the initial CLI skeleton is in place.
+The currently shipped implementation scope delivers `check`, `bulk`, and `audit`. We prioritized `audit` before `discovery` so operators can review and export local compliance evidence before the product expands into provider-metadata lookup flows.
 
 ### Product Invariants
 

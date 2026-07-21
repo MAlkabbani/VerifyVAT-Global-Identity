@@ -127,3 +127,68 @@ def test_bulk_continues_when_rows_fail_but_errors_are_recoverable(
     assert len(output_rows) == 2
     assert output_rows[0]["internal_status"] == "INVALID"
     assert output_rows[1]["internal_status"] == "VALID"
+
+
+def test_audit_renders_recent_history_and_can_export_csv(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    """Audit mode should read local history and optionally export the same records."""
+
+    export_path = tmp_path / "exports" / "audit.csv"
+    records = [
+        {
+            "transaction_id": 2,
+            "execution_timestamp": "2026-07-22T00:00:00Z",
+            "consultation_receipt": "receipt-2",
+            "raw_identifier": "NO000000002",
+            "normalized_identifier": "NO000000002",
+            "inferred_type": "no_orgnr",
+            "internal_status": "VALID",
+            "legal_name": "Example Org",
+            "address": "Oslo",
+            "provider_payload": '{"verification":{"ok":true}}',
+        }
+    ]
+
+    monkeypatch.setattr(cli_main, "get_default_db_path", lambda: tmp_path / "audit.db")
+    monkeypatch.setattr(cli_main, "fetch_recent_audit_records", lambda *args, **kwargs: records)
+
+    exit_code = cli_main.main(["audit", "--limit", "5", "--export-csv", str(export_path)])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert "VerifyVAT Audit History" in captured.out
+    assert "Example Org" in captured.out
+    assert export_path.is_file()
+
+    with export_path.open("r", encoding="utf-8", newline="") as export_file:
+        export_rows = list(csv.DictReader(export_file))
+
+    assert export_rows == [
+        {
+            "transaction_id": "2",
+            "execution_timestamp": "2026-07-22T00:00:00Z",
+            "consultation_receipt": "receipt-2",
+            "raw_identifier": "NO000000002",
+            "normalized_identifier": "NO000000002",
+            "inferred_type": "no_orgnr",
+            "internal_status": "VALID",
+            "legal_name": "Example Org",
+            "address": "Oslo",
+            "provider_payload": '{"verification":{"ok":true}}',
+        }
+    ]
+
+
+def test_audit_limit_must_be_positive(capsys: pytest.CaptureFixture[str]) -> None:
+    """Audit mode should reject non-positive limits at parse time."""
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli_main.main(["audit", "--limit", "0"])
+
+    captured = capsys.readouterr()
+    assert exc_info.value.code == 2
+    assert "greater than zero" in captured.err

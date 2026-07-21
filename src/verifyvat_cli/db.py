@@ -9,6 +9,18 @@ from verifyvat_cli.core import VerificationResult
 
 DEFAULT_AUDIT_DIR = Path.home() / ".verifyvat"
 DEFAULT_AUDIT_DB_PATH = DEFAULT_AUDIT_DIR / "audit.db"
+AUDIT_EXPORT_COLUMNS = [
+    "transaction_id",
+    "execution_timestamp",
+    "consultation_receipt",
+    "raw_identifier",
+    "normalized_identifier",
+    "inferred_type",
+    "internal_status",
+    "legal_name",
+    "address",
+    "provider_payload",
+]
 
 CREATE_VERIFICATION_LOGS_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS verification_logs (
@@ -88,7 +100,7 @@ def insert_audit_record(result: VerificationResult, db_path: Path | None = None)
 
 
 def fetch_recent_audit_records(limit: int = 10, db_path: Path | None = None) -> list[dict[str, object]]:
-    """Read recent audit records for future `audit` command work."""
+    """Read recent audit records using the CLI's canonical field names."""
 
     resolved_path = ensure_database(db_path)
 
@@ -97,16 +109,16 @@ def fetch_recent_audit_records(limit: int = 10, db_path: Path | None = None) -> 
         rows = connection.execute(
             """
             SELECT
-                transaction_id,
-                execution_timestamp,
-                consultation_receipt,
-                raw_user_input,
-                normalized_identifier,
-                inferred_format_type,
-                internal_resolution_state,
-                verified_legal_entity,
-                registered_address,
-                raw_provider_payload
+                transaction_id AS transaction_id,
+                execution_timestamp AS execution_timestamp,
+                consultation_receipt AS consultation_receipt,
+                raw_user_input AS raw_identifier,
+                normalized_identifier AS normalized_identifier,
+                inferred_format_type AS inferred_type,
+                internal_resolution_state AS internal_status,
+                verified_legal_entity AS legal_name,
+                registered_address AS address,
+                raw_provider_payload AS provider_payload
             FROM verification_logs
             ORDER BY transaction_id DESC
             LIMIT ?

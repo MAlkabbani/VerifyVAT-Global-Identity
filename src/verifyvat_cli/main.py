@@ -22,7 +22,13 @@ from verifyvat_cli.core import (
     VerificationService,
     verify_once,
 )
-from verifyvat_cli.db import ensure_database, get_default_db_path, insert_audit_record
+from verifyvat_cli.db import (
+    AUDIT_EXPORT_COLUMNS,
+    ensure_database,
+    fetch_recent_audit_records,
+    get_default_db_path,
+    insert_audit_record,
+)
 
 SUCCESS_EXIT_CODE = 0
 INVALID_EXIT_CODE = 1
@@ -46,6 +52,15 @@ BULK_OUTPUT_COLUMNS = [
     "consultation_receipt",
     "diagnostics",
     "execution_timestamp",
+]
+AUDIT_TABLE_COLUMNS = [
+    ("transaction_id", "Transaction ID"),
+    ("execution_timestamp", "Timestamp"),
+    ("internal_status", "Status"),
+    ("raw_identifier", "Raw Identifier"),
+    ("normalized_identifier", "Normalized Identifier"),
+    ("inferred_type", "Inferred Type"),
+    ("legal_name", "Legal Name"),
 ]
 
 
@@ -87,6 +102,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Write only a machine-readable bulk summary to stdout.",
     )
     bulk_parser.set_defaults(handler=handle_bulk)
+
+    audit_parser = subparsers.add_parser("audit", help="Read recent local audit records.")
+    audit_parser.add_argument(
+        "--limit",
+        type=_positive_int,
+        default=10,
+        help="Maximum number of recent audit records to display.",
+    )
+    audit_parser.add_argument(
+        "--export-csv",
+        help="Optional path to export the selected audit records as CSV.",
+    )
+    audit_parser.set_defaults(handler=handle_audit)
 
     return parser
 
@@ -244,6 +272,31 @@ def handle_bulk(args: argparse.Namespace) -> int:
         service.close()
 
 
+def handle_audit(args: argparse.Namespace) -> int:
+    """Read and optionally export recent local audit records."""
+
+    db_path = get_default_db_path()
+    stdout_console = Console()
+    export_path = Path(args.export_csv).expanduser() if args.export_csv else None
+
+    try:
+        records = fetch_recent_audit_records(limit=args.limit, db_path=db_path)
+        if export_path is not None:
+            _write_audit_csv(records, export_path)
+    except (OSError, ValueError, sqlite3.DatabaseError) as exc:
+        _print_error(str(exc))
+        return NETWORK_EXIT_CODE
+
+    _render_audit_records(
+        records=records,
+        db_path=db_path,
+        limit=args.limit,
+        export_path=export_path,
+        console=stdout_console,
+    )
+    return SUCCESS_EXIT_CODE
+
+
 def _run_bulk(
     *,
     input_path: Path,
@@ -368,6 +421,47 @@ def _render_bulk_summary(
     console.print(table)
 
 
+def _render_audit_records(
+    *,
+    records: list[dict[str, object]],
+    db_path: Path,
+    limit: int,
+    export_path: Path | None,
+    console: Console,
+) -> None:
+    """Render a concise table of recent local audit history."""
+
+    table = Table(title="VerifyVAT Audit History")
+    table.add_column("Field", style="bold cyan")
+    table.add_column("Value")
+    table.add_row("Database", str(db_path))
+    table.add_row("Requested Limit", str(limit))
+    table.add_row("Returned Records", str(len(records)))
+    table.add_row("CSV Export", str(export_path) if export_path is not None else "(not requested)")
+    console.print(table)
+
+    history_table = Table(title="Recent Audit Records")
+    for _, label in AUDIT_TABLE_COLUMNS:
+        history_table.add_column(label)
+
+    if not records:
+        history_table.add_row("(none)", "(none)", "(none)", "(none)", "(none)", "(none)", "(none)")
+        console.print(history_table)
+        return
+
+    for record in records:
+        history_table.add_row(
+            str(record.get("transaction_id", "")),
+            str(record.get("execution_timestamp", "")),
+            str(record.get("internal_status", "")),
+            str(record.get("raw_identifier", "")),
+            str(record.get("normalized_identifier", "")),
+            str(record.get("inferred_type", "") or "(none)"),
+            str(record.get("legal_name", "") or "(not available)"),
+        )
+    console.print(history_table)
+
+
 def _build_bulk_output_row(row: dict[str, str], result: VerificationResult) -> dict[str, str]:
     """Append the enriched verification fields to one bulk output row."""
 
@@ -385,6 +479,17 @@ def _build_bulk_output_row(row: dict[str, str], result: VerificationResult) -> d
         }
     )
     return enriched_row
+
+
+def _write_audit_csv(records: list[dict[str, object]], export_path: Path) -> None:
+    """Export recent audit records as a deterministic CSV file."""
+
+    export_path.parent.mkdir(parents=True, exist_ok=True)
+    with export_path.open("w", encoding="utf-8", newline="") as export_file:
+        writer = csv.DictWriter(export_file, fieldnames=AUDIT_EXPORT_COLUMNS)
+        writer.writeheader()
+        for record in records:
+            writer.writerow({column: record.get(column, "") for column in AUDIT_EXPORT_COLUMNS})
 
 
 def _build_runtime_error_payload(*, message: str, db_path: Path) -> dict[str, Any]:
@@ -449,6 +554,15 @@ def _non_negative_float(value: str) -> float:
     parsed_value = float(value)
     if parsed_value < 0:
         raise argparse.ArgumentTypeError("--delay must be non-negative.")
+    return parsed_value
+
+
+def _positive_int(value: str) -> int:
+    """Parse a strictly positive integer CLI argument."""
+
+    parsed_value = int(value)
+    if parsed_value <= 0:
+        raise argparse.ArgumentTypeError("value must be greater than zero.")
     return parsed_value
 
 

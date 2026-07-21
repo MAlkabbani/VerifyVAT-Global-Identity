@@ -73,8 +73,8 @@ Each CLI command must have a clear execution contract:
 
 - `verifyvat check [ID]`: Accepts one raw identifier, optionally accepts `--country` and `--type`, performs normalization, optional inference, verification, audit logging, and final rendering.
 - `verifyvat bulk [FILE]`: Accepts a CSV input file with at least an `identifier` column, processes identifiers row by row, writes an enriched CSV output, and records each attempted verification in SQLite.
+- `verifyvat audit`: Reads recent local audit records from SQLite, renders them in a human-readable table, and may export the selected rows as CSV. It must not perform remote verification requests.
 - `verifyvat discovery`: Planned follow-on command. It will return supported formats and/or sources without mutating the audit database unless the team later documents a reason to log discovery operations.
-- `verifyvat audit`: Planned follow-on command. It will read from SQLite only and must not perform remote verification requests.
 
 ### Output Contract
 
@@ -125,8 +125,8 @@ The CLI will expose a primary entry point, verifyvat, followed by discrete subco
 | :---- | :---- | :---- |
 | verifyvat check [ID] | Executes a real-time validation against a single business identifier. | --country [ISO_CODE], --type [EXACT_FORMAT], --json |
 | verifyvat bulk [FILE] | Ingests a CSV file, processes identifiers, and emits an enriched output file. | --output [FILE_PATH], --delay [SECONDS], --json |
+| verifyvat audit | Reads recent local audit history and optionally exports the selected rows as CSV. | --limit [INT], --export-csv [FILE_PATH] |
 | verifyvat discovery | Planned follow-on command for supported jurisdiction and registry freshness lookup. | --sources, --formats |
-| verifyvat audit | Planned follow-on command for local audit retrieval. | --limit [INT], --export-csv |
 
 *Table 3: CLI Command Hierarchy and Subcommand Architecture*
 

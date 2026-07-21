@@ -25,7 +25,7 @@ Use the following terms consistently across the repository:
 
 This application requires Python 3.13 or higher. We recommend using the uv package manager for dependency resolution.
 
-The current phase-1 implementation scope ships the `check` and `bulk` commands first. The `audit` and `discovery` commands remain planned follow-on work and are documented for the broader product roadmap rather than the initial code skeleton.
+The currently shipped command surface includes `check`, `bulk`, and `audit`. The `discovery` command remains planned follow-on work and is still documented as roadmap scope only.
 
 1. Clone the repository:
 
@@ -170,11 +170,25 @@ Phase 1 bulk mode expects an input CSV with an `identifier` column. Optional `co
 
 ### Retrieving Audit Evidence
 
-Phase 1 writes audit records to `~/.verifyvat/audit.db` for every handled `check` result and every attempted bulk row. A dedicated `audit` command is planned follow-on work.
+The CLI writes audit records to `~/.verifyvat/audit.db` for every handled `check` result and every attempted bulk row. We shipped `audit` before `discovery` because it closes the local compliance loop using the existing SQLite evidence store without expanding the remote provider surface.
 
 ```bash
-sqlite3 ~/.verifyvat/audit.db "SELECT * FROM verification_logs ORDER BY transaction_id DESC LIMIT 10;"
+verifyvat audit --limit 10
 ```
+
+To export the same selected rows as CSV:
+
+```bash
+verifyvat audit --limit 10 --export-csv ./exports/audit-history.csv
+```
+
+The `audit` command is intentionally local-only:
+
+- It reads from SQLite and does not call the VerifyVAT API.
+- It supports human-readable table output by default.
+- It can export the selected rows as CSV for downstream review.
+
+The remaining follow-on command is `discovery`, which stays deferred until the team documents the exact supported source/format contract.
 
 ## Licensing and Contributions
 
