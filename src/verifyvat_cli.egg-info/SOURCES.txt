@@ -1,5 +1,5 @@
+README.md
 pyproject.toml
-docs/README.md
 src/verifyvat_cli/__init__.py
 src/verifyvat_cli/core.py
 src/verifyvat_cli/db.py
