@@ -316,4 +316,6 @@ Use these repository-local helpers when validating changes:
 
 This software is released under the GNU Affero General Public License v3.0 or later (`AGPL-3.0-or-later`). See [LICENSE](LICENSE) for the full text.
 
+> For commercial licensing inquiries, please contact support@webeworx.com.
+
 Contributions, bug reports, and feature requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, validation, and submission expectations.
