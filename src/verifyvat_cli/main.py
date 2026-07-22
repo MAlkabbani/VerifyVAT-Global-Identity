@@ -26,6 +26,7 @@ from verifyvat_cli.core import (
     verify_once,
 )
 from verifyvat_cli.db import (
+    AUDIT_FILTERABLE_STATUSES,
     AUDIT_EXPORT_COLUMNS,
     ensure_database,
     fetch_recent_audit_records,
@@ -173,6 +174,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Examples:\n"
             "  verifyvat audit --limit 10\n"
             "  verifyvat audit --limit 10 --json\n"
+            "  verifyvat audit --status VALID --search hydro\n"
             "  verifyvat audit --limit 10 --export-csv ./exports/audit-history.csv\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -186,6 +188,15 @@ def build_parser() -> argparse.ArgumentParser:
     audit_parser.add_argument(
         "--export-csv",
         help="Optional path to export the selected audit records as CSV.",
+    )
+    audit_parser.add_argument(
+        "--status",
+        choices=AUDIT_FILTERABLE_STATUSES,
+        help="Optional exact status filter.",
+    )
+    audit_parser.add_argument(
+        "--search",
+        help="Optional case-insensitive search over raw identifier, normalized identifier, and legal name.",
     )
     audit_parser.add_argument(
         "--json",
@@ -396,18 +407,25 @@ def handle_audit(args: argparse.Namespace) -> int:
     export_path = Path(args.export_csv).expanduser() if args.export_csv else None
 
     try:
-        records = fetch_recent_audit_records(limit=args.limit, db_path=db_path)
+        records = fetch_recent_audit_records(
+            limit=args.limit,
+            db_path=db_path,
+            status=args.status,
+            search=args.search,
+        )
         if export_path is not None:
             _write_audit_csv(records, export_path)
     except (OSError, ValueError, sqlite3.DatabaseError) as exc:
         if args.json:
             _emit_json(
                 _build_audit_error_payload(
-                    status="NETWORK_ERROR",
+                    result_status="NETWORK_ERROR",
                     message=str(exc),
                     db_path=db_path,
                     limit=args.limit,
                     export_path=export_path,
+                    filter_status=args.status,
+                    search=args.search,
                 )
             )
         else:
@@ -421,6 +439,8 @@ def handle_audit(args: argparse.Namespace) -> int:
                 db_path=db_path,
                 limit=args.limit,
                 export_path=export_path,
+                filter_status=args.status,
+                search=args.search,
             )
         )
         return SUCCESS_EXIT_CODE
@@ -430,6 +450,8 @@ def handle_audit(args: argparse.Namespace) -> int:
         db_path=db_path,
         limit=args.limit,
         export_path=export_path,
+        status=args.status,
+        search=args.search,
         console=stdout_console,
     )
     return SUCCESS_EXIT_CODE
@@ -630,6 +652,8 @@ def _render_audit_records(
     db_path: Path,
     limit: int,
     export_path: Path | None,
+    status: str | None,
+    search: str | None,
     console: Console,
 ) -> None:
     """Render a concise table of recent local audit history."""
@@ -639,6 +663,8 @@ def _render_audit_records(
     table.add_column("Value")
     table.add_row("Database", str(db_path))
     table.add_row("Requested Limit", str(limit))
+    table.add_row("Status Filter", status or "(none)")
+    table.add_row("Search Filter", search or "(none)")
     table.add_row("Returned Records", str(len(records)))
     table.add_row("CSV Export", str(export_path) if export_path is not None else "(not requested)")
     console.print(table)
@@ -797,6 +823,8 @@ def _build_audit_payload(
     db_path: Path,
     limit: int,
     export_path: Path | None,
+    filter_status: str | None,
+    search: str | None,
 ) -> dict[str, Any]:
     """Build the machine-readable payload for `audit --json`."""
 
@@ -804,6 +832,8 @@ def _build_audit_payload(
         "query": {
             "limit": limit,
             "export_csv": str(export_path) if export_path is not None else None,
+            "status": filter_status,
+            "search": search,
         },
         "audit_result": {
             "status": "OK",
@@ -817,11 +847,13 @@ def _build_audit_payload(
 
 def _build_audit_error_payload(
     *,
-    status: str,
+    result_status: str,
     message: str,
     db_path: Path,
     limit: int,
     export_path: Path | None,
+    filter_status: str | None,
+    search: str | None,
 ) -> dict[str, Any]:
     """Build the machine-readable error payload for `audit --json`."""
 
@@ -829,9 +861,11 @@ def _build_audit_error_payload(
         "query": {
             "limit": limit,
             "export_csv": str(export_path) if export_path is not None else None,
+            "status": filter_status,
+            "search": search,
         },
         "audit_result": {
-            "status": status,
+            "status": result_status,
             "database_path": str(db_path),
             "record_count": 0,
             "exported_csv": None,

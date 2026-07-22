@@ -171,6 +171,7 @@ Examples:
 ```bash
 verifyvat audit --limit 10
 verifyvat audit --limit 10 --json
+verifyvat audit --status VALID --search hydro
 verifyvat audit --limit 10 --export-csv ./exports/audit-history.csv
 ```
 
@@ -179,6 +180,7 @@ Important behavior:
 - `audit` reads only from the local SQLite database
 - `audit` does not call the remote API
 - `audit --json` returns a machine-readable payload with `query`, `audit_result`, and `records`
+- `audit --status` filters by exact status and `audit --search` performs case-insensitive contains matching over raw identifier, normalized identifier, and legal name
 - `audit` is useful for compliance evidence and support troubleshooting
 
 ### 4. `discovery`

@@ -102,3 +102,68 @@ def test_fetch_recent_audit_records_returns_canonical_keys_and_limit(tmp_path: P
     assert records[0]["internal_status"] == "VALID"
     assert records[0]["legal_name"] == "Example Org"
     assert json.loads(str(records[0]["provider_payload"])) == {"verification": {"ok": True}}
+
+
+def test_fetch_recent_audit_records_supports_status_and_casefolded_search(tmp_path: Path) -> None:
+    """Audit reads should support exact status filters and case-insensitive search."""
+
+    db_path = tmp_path / "audit.db"
+    ensure_database(db_path)
+
+    insert_audit_record(
+        VerificationResult(
+            raw_identifier="NO000000001",
+            normalized_identifier="NO000000001",
+            inferred_type="no_vat",
+            status="INVALID",
+            persisted_status="INVALID",
+            execution_timestamp="2026-07-21T00:00:00Z",
+            consultation_receipt=None,
+            legal_name="Alpha Imports",
+            address=None,
+            diagnostics=["missing"],
+            provider_payload={"verification": {"ok": False}},
+        ),
+        db_path,
+    )
+    insert_audit_record(
+        VerificationResult(
+            raw_identifier="NO914778271",
+            normalized_identifier="914778271",
+            inferred_type="no_orgnr",
+            status="VALID",
+            persisted_status="VALID",
+            execution_timestamp="2026-07-22T00:00:00Z",
+            consultation_receipt="receipt-2",
+            legal_name="Norsk Hydro ASA",
+            address="Oslo",
+            diagnostics=["confirmed"],
+            provider_payload={"verification": {"ok": True}},
+        ),
+        db_path,
+    )
+
+    records = fetch_recent_audit_records(
+        limit=10,
+        db_path=db_path,
+        status="VALID",
+        search="hydro",
+    )
+
+    assert len(records) == 1
+    assert records[0]["raw_identifier"] == "NO914778271"
+    assert records[0]["internal_status"] == "VALID"
+
+
+def test_fetch_recent_audit_records_rejects_unknown_status(tmp_path: Path) -> None:
+    """Unsupported status filters should fail clearly before querying."""
+
+    db_path = tmp_path / "audit.db"
+    ensure_database(db_path)
+
+    try:
+        fetch_recent_audit_records(limit=10, db_path=db_path, status="CONFIG_ERROR")
+    except ValueError as exc:
+        assert "Unsupported audit status" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError for unsupported audit status")

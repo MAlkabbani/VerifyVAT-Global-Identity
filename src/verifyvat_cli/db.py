@@ -21,6 +21,7 @@ AUDIT_EXPORT_COLUMNS = [
     "address",
     "provider_payload",
 ]
+AUDIT_FILTERABLE_STATUSES = ("VALID", "INVALID", "NETWORK_ERROR")
 
 CREATE_VERIFICATION_LOGS_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS verification_logs (
@@ -99,15 +100,47 @@ def insert_audit_record(result: VerificationResult, db_path: Path | None = None)
     return int(row_id)
 
 
-def fetch_recent_audit_records(limit: int = 10, db_path: Path | None = None) -> list[dict[str, object]]:
+def fetch_recent_audit_records(
+    limit: int = 10,
+    db_path: Path | None = None,
+    *,
+    status: str | None = None,
+    search: str | None = None,
+) -> list[dict[str, object]]:
     """Read recent audit records using the CLI's canonical field names."""
 
     resolved_path = ensure_database(db_path)
+    where_clauses: list[str] = []
+    parameters: list[object] = []
+
+    if status is not None:
+        normalized_status = status.strip().upper()
+        if normalized_status not in AUDIT_FILTERABLE_STATUSES:
+            allowed_statuses = ", ".join(AUDIT_FILTERABLE_STATUSES)
+            raise ValueError(f"Unsupported audit status: {status}. Expected one of: {allowed_statuses}")
+        where_clauses.append("internal_resolution_state = ?")
+        parameters.append(normalized_status)
+
+    if search is not None:
+        normalized_search = search.strip().casefold()
+        if normalized_search:
+            where_clauses.append(
+                "("
+                "LOWER(raw_user_input) LIKE ? OR "
+                "LOWER(normalized_identifier) LIKE ? OR "
+                "LOWER(COALESCE(verified_legal_entity, '')) LIKE ?"
+                ")"
+            )
+            search_pattern = f"%{normalized_search}%"
+            parameters.extend([search_pattern, search_pattern, search_pattern])
+
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+    parameters.append(limit)
 
     with _connect(resolved_path) as connection:
         connection.row_factory = sqlite3.Row
         rows = connection.execute(
-            """
+            f"""
             SELECT
                 transaction_id AS transaction_id,
                 execution_timestamp AS execution_timestamp,
@@ -120,10 +153,11 @@ def fetch_recent_audit_records(limit: int = 10, db_path: Path | None = None) -> 
                 registered_address AS address,
                 raw_provider_payload AS provider_payload
             FROM verification_logs
+            {where_sql}
             ORDER BY transaction_id DESC
             LIMIT ?
             """,
-            (limit,),
+            tuple(parameters),
         ).fetchall()
 
     return [dict(row) for row in rows]

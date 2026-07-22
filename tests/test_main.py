@@ -216,6 +216,8 @@ def test_audit_json_returns_machine_readable_records(
     assert captured.err == ""
     payload = json.loads(captured.out)
     assert payload["query"]["limit"] == 5
+    assert payload["query"]["status"] is None
+    assert payload["query"]["search"] is None
     assert payload["audit_result"]["status"] == "OK"
     assert payload["audit_result"]["record_count"] == 1
     assert payload["records"][0]["transaction_id"] == 2
@@ -245,6 +247,64 @@ def test_audit_json_reports_machine_readable_error(
     assert payload["audit_result"]["status"] == "NETWORK_ERROR"
     assert payload["records"] == []
     assert payload["audit_result"]["diagnostics"] == ["database is locked"]
+
+
+def test_audit_passes_status_and_search_filters_to_query_layer(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    """Audit CLI should pass the new filters to the DB layer and report them in JSON."""
+
+    records = [
+        {
+            "transaction_id": 4,
+            "execution_timestamp": "2026-07-23T00:00:00Z",
+            "consultation_receipt": "receipt-4",
+            "raw_identifier": "NO914778271",
+            "normalized_identifier": "914778271",
+            "inferred_type": "no_orgnr",
+            "internal_status": "VALID",
+            "legal_name": "Norsk Hydro ASA",
+            "address": "Oslo",
+            "provider_payload": '{"verification":{"ok":true}}',
+        }
+    ]
+
+    monkeypatch.setattr(cli_main, "get_default_db_path", lambda: tmp_path / "audit.db")
+
+    def fake_fetch_recent_audit_records(*args: object, **kwargs: object) -> list[dict[str, object]]:
+        assert kwargs == {
+            "limit": 5,
+            "db_path": tmp_path / "audit.db",
+            "status": "VALID",
+            "search": "hydro",
+        }
+        return records
+
+    monkeypatch.setattr(cli_main, "fetch_recent_audit_records", fake_fetch_recent_audit_records)
+
+    exit_code = cli_main.main(["audit", "--limit", "5", "--status", "VALID", "--search", "hydro", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    payload = json.loads(captured.out)
+    assert payload["query"]["status"] == "VALID"
+    assert payload["query"]["search"] == "hydro"
+    assert payload["audit_result"]["record_count"] == 1
+
+
+def test_audit_help_mentions_filtering_example(capsys: pytest.CaptureFixture[str]) -> None:
+    """Audit help should advertise the new filtering/search workflow."""
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli_main.main(["audit", "--help"])
+
+    captured = capsys.readouterr()
+
+    assert exc_info.value.code == 0
+    assert "verifyvat audit --status VALID --search hydro" in captured.out
 
 
 def test_audit_limit_must_be_positive(capsys: pytest.CaptureFixture[str]) -> None:

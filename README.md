@@ -202,11 +202,18 @@ To emit machine-readable audit history:
 verifyvat audit --limit 10 --json
 ```
 
+To filter the local audit history:
+
+```bash
+verifyvat audit --status VALID --search hydro
+```
+
 The `audit` command is intentionally local-only:
 
 - It reads from SQLite and does not call the VerifyVAT API.
 - It supports human-readable table output by default.
 - It supports `--json` for automation-safe audit reads.
+- It supports exact `--status` filtering and case-insensitive `--search` across raw identifier, normalized identifier, and legal name.
 - It can export the selected rows as CSV for downstream review.
 
 ### Inspecting Supported Formats and Sources
