@@ -16,6 +16,7 @@ from typing import Any
 from rich.console import Console
 from rich.table import Table
 
+from verifyvat_cli import __version__
 from verifyvat_cli.core import (
     ConfigError,
     DiscoveryResult,
@@ -111,6 +112,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--debug",
         action="store_true",
         help="Print debug tracebacks for unexpected failures.",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Show the installed VerifyVAT CLI version and exit.",
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)

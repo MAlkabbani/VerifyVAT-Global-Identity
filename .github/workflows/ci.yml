@@ -35,5 +35,11 @@ jobs:
       - name: Run mypy
         run: python -m mypy src tests
 
+      - name: Check docs alignment
+        run: python ./scripts/check_docs_alignment.py
+
       - name: Run pytest
         run: python -m pytest -q
+
+      - name: Run offline smoke test
+        run: bash ./scripts/smoke_test.sh --offline

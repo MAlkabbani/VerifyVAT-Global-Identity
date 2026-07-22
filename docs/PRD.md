@@ -36,6 +36,7 @@ These rules are part of the build contract and must remain true unless the docs 
 A build is not complete unless it satisfies the following criteria:
 
 - A developer can install dependencies, set `VERIFYVAT_API_KEY`, and execute a single verification from the terminal.
+- A developer can confirm the installed release with `verifyvat --version` and run the documented repo-local smoke-test workflow.
 - A single verification can run with either explicit type input or inference-driven type selection.
 - Bulk processing can read identifiers from a CSV input and write a corresponding enriched CSV output.
 - Each verification attempt writes a durable audit record to SQLite, including success and handled failure cases.

@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 import verifyvat_cli.main as cli_main
+from verifyvat_cli import __version__
 from verifyvat_cli.core import ConfigError, DiscoveryResult, PersistedStatus, RuntimeStatus, VerificationResult
 
 
@@ -523,6 +524,19 @@ def test_root_help_includes_examples(capsys: pytest.CaptureFixture[str]) -> None
     assert "Verify global business identifiers" in captured.out
     assert "verifyvat check 914778271 --type no_orgnr --json" in captured.out
     assert "verifyvat discovery --country NO --json" in captured.out
+
+
+def test_root_version_reports_package_version(capsys: pytest.CaptureFixture[str]) -> None:
+    """The root parser should surface the installed CLI version."""
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli_main.main(["--version"])
+
+    captured = capsys.readouterr()
+
+    assert exc_info.value.code == 0
+    assert captured.err == ""
+    assert captured.out.strip() == f"verifyvat {__version__}"
 
 
 def test_discovery_help_explains_default_behavior(capsys: pytest.CaptureFixture[str]) -> None:

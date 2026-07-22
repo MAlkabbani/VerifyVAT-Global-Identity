@@ -51,6 +51,7 @@ If you already use `uv`, this is the preferred setup path:
 uv sync
 source .venv/bin/activate
 verifyvat --help
+verifyvat --version
 ```
 
 ### Fallback: Standard `venv` and `pip`
@@ -63,6 +64,7 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 verifyvat --help
+verifyvat --version
 ```
 
 ### Direct Local Entrypoint
@@ -71,6 +73,7 @@ If you do not want to activate the virtual environment, call the repo-local exec
 
 ```bash
 ./.venv/bin/verifyvat --help
+./.venv/bin/verifyvat --version
 ```
 
 ## Authentication
@@ -95,6 +98,7 @@ Use the documented Norwegian sample to confirm local setup:
 source .venv/bin/activate
 export VERIFYVAT_API_KEY="your_secure_api_key_here"
 
+verifyvat --version
 verifyvat check 914778271 --type no_orgnr --json
 verifyvat check 914778271 --country NO --json
 verifyvat discovery --country NO --json
@@ -143,7 +147,7 @@ Use `bulk` when you want to enrich a CSV of identifiers.
 Example:
 
 ```bash
-verifyvat bulk ./inputs/vendors.csv --output ./outputs/vendors_enriched.csv
+verifyvat bulk ./fixtures/sample_bulk_input.csv --output ./outputs/sample_bulk_output.csv
 ```
 
 Input contract:
@@ -161,6 +165,10 @@ Output adds:
 - `consultation_receipt`
 - `diagnostics`
 - `execution_timestamp`
+
+Sample fixture:
+
+- `./fixtures/sample_bulk_input.csv` includes one explicit-type row and one inference row for the documented Norwegian sample identifier
 
 ### 3. `audit`
 
@@ -300,6 +308,27 @@ Check these first:
 - are you verifying a VAT ID or a company-registration ID?
 - if using `--type`, is it the exact VerifyVAT type for that identifier family?
 
+## Repeatable Helper Scripts
+
+Use the repo-local helper scripts when you want a fast confidence pass:
+
+```bash
+./scripts/smoke_test.sh --offline
+./scripts/check_docs_alignment.py
+```
+
+When you have a valid `VERIFYVAT_API_KEY` exported and want the full end-to-end pass:
+
+```bash
+./scripts/smoke_test.sh --live
+```
+
+What these do:
+
+- `./scripts/smoke_test.sh --offline` checks `verifyvat --version`, CLI help, local audit JSON, and docs alignment without calling the remote API
+- `./scripts/smoke_test.sh --live` adds real `check`, `discovery`, and `bulk` smoke tests using `./fixtures/sample_bulk_input.csv`
+- `./scripts/check_docs_alignment.py` verifies the core docs still match the shipped command surface
+
 ## Recommended Daily Workflow
 
 For a new developer working locally:
@@ -307,9 +336,11 @@ For a new developer working locally:
 1. activate `.venv`
 2. export `VERIFYVAT_API_KEY`
 3. run `verifyvat --help`
-4. run the sample `check` smoke test
-5. run your real test case
-6. inspect `audit` output if you need evidence or debugging context
+4. run `verifyvat --version`
+5. run `./scripts/smoke_test.sh --offline`
+6. run the sample `check` smoke test
+7. run your real test case
+8. inspect `audit` output if you need evidence or debugging context
 
 ## Where To Go Next
 

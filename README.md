@@ -28,6 +28,8 @@ The currently shipped commands are:
 - `verifyvat audit`
 - `verifyvat discovery`
 
+The root parser also exposes `verifyvat --version` so operators can confirm the installed release quickly.
+
 ## Canonical Terminology
 
 Use the following terms consistently across the repository:
@@ -70,6 +72,7 @@ python -m pip install -e ".[dev]"
 
 ```bash
 verifyvat --help
+verifyvat --version
 ```
 
 If you prefer not to activate the virtual environment, use the local entrypoint directly:
@@ -119,6 +122,15 @@ verifyvat discovery --country NO --json
 ```
 
 The first command verifies a documented Norwegian organization number directly. The second command exercises inference. The third confirms the discovery endpoints.
+
+For a repeatable repo-local check flow, use:
+
+```bash
+./scripts/smoke_test.sh --offline
+./scripts/smoke_test.sh --live
+```
+
+The live mode requires `VERIFYVAT_API_KEY`. The offline mode checks the installed CLI, local audit-read behavior, and docs alignment without calling the remote API.
 
 ### Validating a Single Identifier
 
@@ -177,10 +189,12 @@ What to inspect in the JSON result:
 Ingest a CSV containing raw identifiers and output an enriched dataset.
 
 ```bash
-verifyvat bulk ./inputs/legacy_suppliers.csv --output ./enriched_suppliers.csv --json
+verifyvat bulk ./fixtures/sample_bulk_input.csv --output ./outputs/sample_bulk_output.csv --json
 ```
 
 Phase 1 bulk mode expects an input CSV with an `identifier` column. Optional `country` and `type` columns may be supplied per row. The output CSV preserves the original columns and appends `normalized_identifier`, `inferred_type`, `internal_status`, `legal_name`, `address`, `consultation_receipt`, `diagnostics`, and `execution_timestamp`.
+
+A sample fixture is included at `./fixtures/sample_bulk_input.csv` so contributors can run a known-good bulk path without first creating their own CSV.
 
 ### Retrieving Audit Evidence
 
@@ -258,10 +272,19 @@ The `discovery` command in this slice:
 If you are onboarding to this repository for the first time:
 
 - use the local `.venv` path first instead of assuming a global install
+- use `verifyvat --version` to confirm which installed release you are exercising
 - use the documented sample before testing a real company identifier
 - prefer `--type` when you know the exact VerifyVAT type
 - use `--country` when you need inference
 - inspect `audit` when you want proof of what was persisted locally
+
+## Repeatable Checks
+
+Use these repository-local helpers when validating changes:
+
+- `./scripts/smoke_test.sh --offline`: runs local-only smoke checks, including `verifyvat --version`, CLI help, audit JSON, and docs alignment.
+- `./scripts/smoke_test.sh --live`: adds real VerifyVAT API calls and a bulk-fixture pass when `VERIFYVAT_API_KEY` is exported.
+- `./scripts/check_docs_alignment.py`: verifies the high-signal docs stay aligned with the shipped command surface and helper workflow.
 
 ## Documentation Map
 

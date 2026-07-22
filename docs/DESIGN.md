@@ -10,10 +10,12 @@ The CLI will expose a primary entry point, verifyvat, followed by discrete subco
 | :---- | :---- | :---- |
 | verifyvat check [ID] | Executes a real-time validation against a single business identifier. | --country [ISO_CODE], --type [EXACT_FORMAT], --json |
 | verifyvat bulk [FILE] | Ingests a CSV file, processes identifiers, and emits an enriched output file. | --output [FILE_PATH], --delay [SECONDS], --json |
-| verifyvat audit | Queries local SQLite audit history and can export the selected rows as CSV. | --limit [INT], --export-csv [FILE_PATH] |
+| verifyvat audit | Queries local SQLite audit history, can filter by exact status or case-insensitive search, and can export the selected rows as CSV or JSON. | --limit [INT], --export-csv [FILE_PATH], --status [STATUS], --search [TEXT], --json |
 | verifyvat discovery | Lists supported formats and/or registry sources, defaulting to both sections. | --formats, --sources, --country [ISO_CODE], --region [REGION], --json |
 
 *Table 3: CLI Command Hierarchy and Subcommand Architecture*
+
+The root parser should also expose a `--version` flag so operators can confirm the installed release quickly during onboarding, support, and smoke-test workflows.
 
 ### Visual Feedback and Progressive Disclosure
 
