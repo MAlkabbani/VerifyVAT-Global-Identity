@@ -64,7 +64,8 @@ Goal: deepen the existing product surface only where real use suggests value.
 
 Candidate follow-on work:
 
-- expand discovery metadata if the provider surface exposes richer freshness details
+- expand discovery metadata where the provider surface exposes richer per-format and per-source coverage detail
+- note explicitly when hoped-for freshness timestamps are not available in the current SDK discovery payloads
 - consider `audit --json` only if automation needs a machine-readable audit-read path
 - consider audit filtering or search only after real operator usage justifies it
 

@@ -201,6 +201,8 @@ Important behavior:
 - if you provide neither `--formats` nor `--sources`, the CLI shows both sections
 - `discovery` is read-only and does not create audit records
 - `--json` writes one machine-readable object to stdout
+- discovery now exposes richer per-format source coverage and per-source supported-type detail
+- discovery does not currently include freshness timestamps because the current SDK discovery payloads do not expose them
 
 ## Real VAT ID Testing
 
@@ -238,6 +240,8 @@ For discovery mode, inspect:
 - `discovery_result`
 - `formats`
 - `sources`
+- `formats[*].source_details`
+- `sources[*].supported_type_details`
 
 ## Where Data Is Stored
 

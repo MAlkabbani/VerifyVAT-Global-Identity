@@ -248,8 +248,10 @@ The `discovery` command in this slice:
 
 - uses `--formats` and `--sources` to narrow the output, while defaulting to both sections when neither flag is supplied.
 - supports `--country` and `--region` filters for a practical first-pass lookup surface.
+- exposes richer per-format source coverage and per-source supported-type detail in both table and JSON output.
 - supports `--json` and writes exactly one machine-readable object to stdout.
 - does not write to the local audit database because it is metadata inspection, not a verification event.
+- does not currently expose registry freshness timestamps because that metadata is not present in the current SDK discovery payloads.
 
 ## Junior Developer Notes
 

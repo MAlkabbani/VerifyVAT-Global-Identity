@@ -342,8 +342,32 @@ def test_discovery_json_defaults_to_formats_and_sources(
                 region=None,
                 include_formats=True,
                 include_sources=True,
-                formats=[{"id": "no_orgnr", "country": "NO", "region": "EMEA", "validation": "registry", "coverage": "full", "name": "Organisasjonsnummer"}],
-                sources=[{"id": "no-brreg", "country": "NO", "active": True, "jurisdictions": ["NO"], "coverage": ["full"], "name": "Brreg"}],
+                formats=[
+                    {
+                        "id": "no_orgnr",
+                        "country": "NO",
+                        "region": "EMEA",
+                        "validation": "registry",
+                        "coverage": "full",
+                        "source_count": 1,
+                        "source_coverage": ["full"],
+                        "source_details": [{"id": "no-brreg", "coverage": "full"}],
+                        "name": "Organisasjonsnummer",
+                    }
+                ],
+                sources=[
+                    {
+                        "id": "no-brreg",
+                        "country": "NO",
+                        "active": True,
+                        "jurisdictions": ["NO"],
+                        "supported_type_count": 1,
+                        "coverage": ["full"],
+                        "validation_modes": ["registry"],
+                        "supported_type_details": [{"id": "no_orgnr", "coverage": "full"}],
+                        "name": "Brreg",
+                    }
+                ],
             )
 
         def close(self) -> None:
@@ -363,7 +387,10 @@ def test_discovery_json_defaults_to_formats_and_sources(
     assert payload["query"]["include_formats"] is True
     assert payload["query"]["include_sources"] is True
     assert payload["formats"][0]["id"] == "no_orgnr"
+    assert payload["formats"][0]["source_details"] == [{"coverage": "full", "id": "no-brreg"}]
     assert payload["sources"][0]["id"] == "no-brreg"
+    assert payload["discovery_result"]["active_sources_count"] == 1
+    assert payload["sources"][0]["supported_type_count"] == 1
 
 
 def test_discovery_table_can_show_sources_only(
@@ -391,7 +418,18 @@ def test_discovery_table_can_show_sources_only(
                 include_formats=False,
                 include_sources=True,
                 formats=[],
-                sources=[{"id": "no-brreg", "country": "NO", "active": True, "jurisdictions": ["NO"], "coverage": ["full"], "name": "Brreg"}],
+                sources=[
+                    {
+                        "id": "no-brreg",
+                        "country": "NO",
+                        "active": True,
+                        "jurisdictions": ["NO"],
+                        "supported_type_count": 1,
+                        "coverage": ["full"],
+                        "validation_modes": ["registry"],
+                        "name": "Brreg",
+                    }
+                ],
             )
 
         def close(self) -> None:
@@ -409,6 +447,8 @@ def test_discovery_table_can_show_sources_only(
     assert "VerifyVAT Discovery" in captured.out
     assert "Registry Sources" in captured.out
     assert "Supported Formats" not in captured.out
+    assert "Active Sources" in captured.out
+    assert "Brreg" in captured.out
     assert captured.err == ""
 
 

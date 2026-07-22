@@ -91,6 +91,7 @@ class DiscoveryResult:
     def to_json_dict(self) -> dict[str, Any]:
         """Shape the discovery result into the stable `--json` output contract."""
 
+        active_sources_count = sum(1 for source in self.sources if bool(source.get("active")))
         return {
             "query": {
                 "country": self.country,
@@ -103,6 +104,8 @@ class DiscoveryResult:
                 "execution_timestamp": self.execution_timestamp,
                 "formats_count": len(self.formats),
                 "sources_count": len(self.sources),
+                "active_sources_count": active_sources_count,
+                "inactive_sources_count": len(self.sources) - active_sources_count,
             },
             "formats": self.formats,
             "sources": self.sources,
@@ -427,6 +430,14 @@ def _serialize_id_type(id_type: IdTypeDefinition) -> dict[str, Any]:
     """Project one SDK ID-type definition into a CLI-stable payload."""
 
     sources = id_type.get("sources") or []
+    source_details = [
+        {
+            "id": source.get("id"),
+            "coverage": source.get("coverage"),
+        }
+        for source in sources
+        if source.get("id")
+    ]
     return {
         "id": id_type.get("id"),
         "acronym": id_type.get("acronym"),
@@ -436,7 +447,13 @@ def _serialize_id_type(id_type: IdTypeDefinition) -> dict[str, Any]:
         "validation": id_type.get("validation"),
         "coverage": get_type_coverage_level(id_type),
         "format": list(id_type.get("format") or []),
+        "format_count": len(id_type.get("format") or []),
         "sources": [str(source.get("id")) for source in sources if source.get("id")],
+        "source_count": len(source_details),
+        "source_coverage": _sorted_unique_strings(
+            source.get("coverage") for source in sources if source.get("coverage")
+        ),
+        "source_details": source_details,
     }
 
 
@@ -444,6 +461,19 @@ def _serialize_data_source(source: DataSourceDefinition) -> dict[str, Any]:
     """Project one SDK data-source definition into a CLI-stable payload."""
 
     supported_types = source.get("types") or []
+    supported_type_details = [
+        {
+            "id": item.get("id"),
+            "name": item.get("name"),
+            "acronym": item.get("acronym"),
+            "country": item.get("country"),
+            "region": item.get("region"),
+            "validation": item.get("validation"),
+            "coverage": item.get("coverage"),
+        }
+        for item in supported_types
+        if item.get("id")
+    ]
     return {
         "id": source.get("id"),
         "acronym": source.get("acronym"),
@@ -452,7 +482,11 @@ def _serialize_data_source(source: DataSourceDefinition) -> dict[str, Any]:
         "active": bool(source.get("active")),
         "jurisdictions": list(source.get("jurisdictions") or []),
         "supported_types": [str(item.get("id")) for item in supported_types if item.get("id")],
+        "supported_type_count": len(supported_type_details),
         "coverage": sorted({str(item.get("coverage")) for item in supported_types if item.get("coverage")}),
+        "regions": _sorted_unique_strings(item.get("region") for item in supported_types),
+        "validation_modes": _sorted_unique_strings(item.get("validation") for item in supported_types),
+        "supported_type_details": supported_type_details,
     }
 
 
@@ -681,6 +715,12 @@ def _sanitize_error_message(message: str) -> str:
     if api_key:
         return message.replace(api_key, "[REDACTED]")
     return message
+
+
+def _sorted_unique_strings(values: Any) -> list[str]:
+    """Return sorted non-empty string values without duplicates."""
+
+    return sorted({str(value) for value in values if value})
 
 
 def _utc_now_iso() -> str:

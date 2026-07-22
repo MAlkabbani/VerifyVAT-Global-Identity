@@ -216,5 +216,19 @@ def test_discovery_service_lists_formats_and_sources() -> None:
     assert result.region == "EMEA"
     assert result.formats[0]["id"] == "no_orgnr"
     assert result.formats[0]["coverage"] == "full"
+    assert result.formats[0]["source_count"] == 1
+    assert result.formats[0]["source_details"] == [{"id": "no-brreg", "coverage": "full"}]
     assert result.sources[0]["id"] == "no-brreg"
     assert result.sources[0]["active"] is True
+    assert result.sources[0]["supported_type_count"] == 1
+    assert result.sources[0]["supported_type_details"] == [
+        {
+            "id": "no_orgnr",
+            "name": "Organisasjonsnummer",
+            "acronym": "ORGNR",
+            "country": "NO",
+            "region": "EMEA",
+            "validation": "registry",
+            "coverage": "full",
+        }
+    ]

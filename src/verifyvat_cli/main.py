@@ -72,6 +72,8 @@ DISCOVERY_FORMAT_COLUMNS = [
     ("region", "Region"),
     ("validation", "Validation"),
     ("coverage", "Coverage"),
+    ("source_count", "Source Count"),
+    ("source_coverage", "Source Coverage"),
     ("name", "Name"),
 ]
 DISCOVERY_SOURCE_COLUMNS = [
@@ -79,7 +81,9 @@ DISCOVERY_SOURCE_COLUMNS = [
     ("country", "Country"),
     ("active", "Active"),
     ("jurisdictions", "Jurisdictions"),
+    ("supported_type_count", "Type Count"),
     ("coverage", "Coverage"),
+    ("validation_modes", "Validation"),
     ("name", "Name"),
 ]
 ROOT_HELP_EPILOG = """Examples:
@@ -694,6 +698,7 @@ def _render_audit_records(
 def _render_discovery_result(result: DiscoveryResult, console: Console) -> None:
     """Render supported formats and registry sources in concise tables."""
 
+    active_sources_count = sum(1 for source in result.sources if bool(source.get("active")))
     summary_table = Table(title="VerifyVAT Discovery")
     summary_table.add_column("Field", style="bold cyan")
     summary_table.add_column("Value")
@@ -703,6 +708,8 @@ def _render_discovery_result(result: DiscoveryResult, console: Console) -> None:
     summary_table.add_row("Sources Included", "yes" if result.include_sources else "no")
     summary_table.add_row("Formats Returned", str(len(result.formats)))
     summary_table.add_row("Sources Returned", str(len(result.sources)))
+    summary_table.add_row("Active Sources", str(active_sources_count))
+    summary_table.add_row("Inactive Sources", str(len(result.sources) - active_sources_count))
     console.print(summary_table)
 
     if result.include_formats:
@@ -711,7 +718,16 @@ def _render_discovery_result(result: DiscoveryResult, console: Console) -> None:
             formats_table.add_column(label)
 
         if not result.formats:
-            formats_table.add_row("(none)", "(none)", "(none)", "(none)", "(none)", "(none)")
+            formats_table.add_row(
+                "(none)",
+                "(none)",
+                "(none)",
+                "(none)",
+                "(none)",
+                "(none)",
+                "(none)",
+                "(none)",
+            )
         else:
             for item in result.formats:
                 formats_table.add_row(
@@ -720,6 +736,8 @@ def _render_discovery_result(result: DiscoveryResult, console: Console) -> None:
                     str(item.get("region", "")),
                     str(item.get("validation", "")),
                     str(item.get("coverage", "")),
+                    str(item.get("source_count", 0)),
+                    ", ".join(str(value) for value in item.get("source_coverage", [])) or "(none)",
                     str(item.get("name", "")),
                 )
         console.print(formats_table)
@@ -730,7 +748,16 @@ def _render_discovery_result(result: DiscoveryResult, console: Console) -> None:
             sources_table.add_column(label)
 
         if not result.sources:
-            sources_table.add_row("(none)", "(none)", "(none)", "(none)", "(none)", "(none)")
+            sources_table.add_row(
+                "(none)",
+                "(none)",
+                "(none)",
+                "(none)",
+                "(none)",
+                "(none)",
+                "(none)",
+                "(none)",
+            )
         else:
             for item in result.sources:
                 sources_table.add_row(
@@ -738,7 +765,9 @@ def _render_discovery_result(result: DiscoveryResult, console: Console) -> None:
                     str(item.get("country", "")),
                     "yes" if bool(item.get("active")) else "no",
                     ", ".join(str(value) for value in item.get("jurisdictions", [])) or "(none)",
+                    str(item.get("supported_type_count", 0)),
                     ", ".join(str(value) for value in item.get("coverage", [])) or "(none)",
+                    ", ".join(str(value) for value in item.get("validation_modes", [])) or "(none)",
                     str(item.get("name", "")),
                 )
         console.print(sources_table)
