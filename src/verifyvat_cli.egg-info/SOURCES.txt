@@ -1,3 +1,4 @@
+LICENSE
 README.md
 pyproject.toml
 src/verifyvat_cli/__init__.py

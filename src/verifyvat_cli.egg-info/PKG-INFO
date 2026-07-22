@@ -2,26 +2,47 @@ Metadata-Version: 2.4
 Name: verifyvat-cli
 Version: 0.1.0
 Summary: Terminal-based VerifyVAT CLI for global business identifier validation.
+License-Expression: MIT
 Requires-Python: >=3.13
 Description-Content-Type: text/markdown
+License-File: LICENSE
 Requires-Dist: rich>=13.9.4
 Requires-Dist: verifyvat-sdk>=0.1.0
 Provides-Extra: dev
 Requires-Dist: mypy>=1.18.1; extra == "dev"
 Requires-Dist: pytest>=8.4.1; extra == "dev"
 Requires-Dist: ruff>=0.12.4; extra == "dev"
+Dynamic: license-file
 
 # VerifyVAT Global Identity CLI
 
+```text
++--------------------------------------------------+
+| VerifyVAT Global Identity CLI                    |
+| Independent open-source CLI for VerifyVAT SDK    |
++--------------------------------------------------+
+```
+
 VerifyVAT CLI is a Python command-line application for validating and enriching business identifiers through the official VerifyVAT SDK. It supports single checks, CSV bulk processing, local audit evidence, and metadata discovery for supported formats and registries.
+
+This README uses the upstream product name only to describe SDK compatibility and intended integration. It does not imply endorsement, partnership, or official branding by the upstream provider.
+
+<p>
+  <a href="https://buymeacoffee.com/webeworx" target="_blank" rel="noopener noreferrer">
+    <img
+      src="https://img.shields.io/badge/Support%20This%20Project-Coffee%20Fund-f59e0b?style=for-the-badge&labelColor=111827&color=fbbf24"
+      alt="Support this project"
+    />
+  </a>
+</p>
 
 ## Start Here
 
 If you are new to the repository:
 
-- Read the beginner-friendly guide: [GETTING_STARTED_GUIDE.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/GETTING_STARTED_GUIDE.md)
-- Review the shipped implementation scope: [IMPLEMENTATION_PLAN.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/IMPLEMENTATION_PLAN.md)
-- Review the next refinement phases: [REFINEMENT_ROADMAP.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/REFINEMENT_ROADMAP.md)
+- Read the beginner-friendly guide: [GETTING_STARTED_GUIDE.md](docs/GETTING_STARTED_GUIDE.md)
+- Review the shipped implementation scope: [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
+- Review the next refinement phases: [REFINEMENT_ROADMAP.md](docs/REFINEMENT_ROADMAP.md)
 
 ## What It Does
 
@@ -40,6 +61,8 @@ The currently shipped commands are:
 - `verifyvat bulk`
 - `verifyvat audit`
 - `verifyvat discovery`
+
+The root parser also exposes `verifyvat --version` so operators can confirm the installed release quickly.
 
 ## Canonical Terminology
 
@@ -83,6 +106,7 @@ python -m pip install -e ".[dev]"
 
 ```bash
 verifyvat --help
+verifyvat --version
 ```
 
 If you prefer not to activate the virtual environment, use the local entrypoint directly:
@@ -114,7 +138,7 @@ If you accidentally paste or expose a live key in terminal history, screenshots,
 - Prefer header-based authentication and do not place secrets in URLs, query strings, or copied example commands.
 - Redact secrets from debug output, error reports, and exported diagnostics.
 
-For a fuller onboarding flow, use [GETTING_STARTED_GUIDE.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/GETTING_STARTED_GUIDE.md).
+For a fuller onboarding flow, use [GETTING_STARTED_GUIDE.md](docs/GETTING_STARTED_GUIDE.md).
 
 ## Operational Usage
 
@@ -132,6 +156,15 @@ verifyvat discovery --country NO --json
 ```
 
 The first command verifies a documented Norwegian organization number directly. The second command exercises inference. The third confirms the discovery endpoints.
+
+For a repeatable repo-local check flow, use:
+
+```bash
+./scripts/smoke_test.sh --offline
+./scripts/smoke_test.sh --live
+```
+
+The live mode requires `VERIFYVAT_API_KEY`. The offline mode checks the installed CLI, local audit-read behavior, and docs alignment without calling the remote API. The helper prefers the repo-local `.venv` binaries when present and falls back to the active environment's `verifyvat` and `python` executables in CI-style installs.
 
 ### Validating a Single Identifier
 
@@ -190,10 +223,12 @@ What to inspect in the JSON result:
 Ingest a CSV containing raw identifiers and output an enriched dataset.
 
 ```bash
-verifyvat bulk ./inputs/legacy_suppliers.csv --output ./enriched_suppliers.csv --json
+verifyvat bulk ./fixtures/sample_bulk_input.csv --output ./outputs/sample_bulk_output.csv --json
 ```
 
 Phase 1 bulk mode expects an input CSV with an `identifier` column. Optional `country` and `type` columns may be supplied per row. The output CSV preserves the original columns and appends `normalized_identifier`, `inferred_type`, `internal_status`, `legal_name`, `address`, `consultation_receipt`, `diagnostics`, and `execution_timestamp`.
+
+A sample fixture is included at `./fixtures/sample_bulk_input.csv` so contributors can run a known-good bulk path without first creating their own CSV.
 
 ### Retrieving Audit Evidence
 
@@ -261,26 +296,40 @@ The `discovery` command in this slice:
 
 - uses `--formats` and `--sources` to narrow the output, while defaulting to both sections when neither flag is supplied.
 - supports `--country` and `--region` filters for a practical first-pass lookup surface.
+- exposes richer per-format source coverage and per-source supported-type detail in both table and JSON output.
 - supports `--json` and writes exactly one machine-readable object to stdout.
 - does not write to the local audit database because it is metadata inspection, not a verification event.
+- does not currently expose registry freshness timestamps because that metadata is not present in the current SDK discovery payloads.
 
 ## Junior Developer Notes
 
 If you are onboarding to this repository for the first time:
 
 - use the local `.venv` path first instead of assuming a global install
+- use `verifyvat --version` to confirm which installed release you are exercising
 - use the documented sample before testing a real company identifier
 - prefer `--type` when you know the exact VerifyVAT type
 - use `--country` when you need inference
 - inspect `audit` when you want proof of what was persisted locally
 
+## Repeatable Checks
+
+Use these repository-local helpers when validating changes:
+
+- `./scripts/smoke_test.sh --offline`: runs local-only smoke checks, including `verifyvat --version`, CLI help, audit JSON, and docs alignment; it prefers repo-local `.venv` binaries but falls back to the active environment when needed.
+- `./scripts/smoke_test.sh --live`: adds real VerifyVAT API calls and a bulk-fixture pass when `VERIFYVAT_API_KEY` is exported.
+- `./scripts/check_docs_alignment.py`: verifies the high-signal docs stay aligned with the shipped command surface and helper workflow.
+
 ## Documentation Map
 
-- Beginner onboarding and full usage guide: [GETTING_STARTED_GUIDE.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/GETTING_STARTED_GUIDE.md)
-- Shipped implementation contract: [IMPLEMENTATION_PLAN.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/IMPLEMENTATION_PLAN.md)
-- Next refinement phases: [REFINEMENT_ROADMAP.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/REFINEMENT_ROADMAP.md)
-- Product and architecture context: [PRD.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/PRD.md), [ARCHITECTURE.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/ARCHITECTURE.md), [DESIGN.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/DESIGN.md), [SPECS.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/SPECS.md)
+- Beginner onboarding and full usage guide: [GETTING_STARTED_GUIDE.md](docs/GETTING_STARTED_GUIDE.md)
+- Shipped implementation contract: [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
+- Next refinement phases: [REFINEMENT_ROADMAP.md](docs/REFINEMENT_ROADMAP.md)
+- Product and architecture context: [PRD.md](docs/PRD.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DESIGN.md](docs/DESIGN.md), [SPECS.md](docs/SPECS.md)
+- Original implementation prompt and research context: [PROMPT.md](docs/PROMPT.md), [research.md](docs/research.md)
 
 ## Licensing and Contributions
 
-This software is released under the MIT License. Contributions, bug reports, and feature requests are welcome.
+This software is released under the MIT License. See [LICENSE](LICENSE) for the full text.
+
+Contributions, bug reports, and feature requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, validation, and submission expectations.
