@@ -172,6 +172,7 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=(
             "Examples:\n"
             "  verifyvat audit --limit 10\n"
+            "  verifyvat audit --limit 10 --json\n"
             "  verifyvat audit --limit 10 --export-csv ./exports/audit-history.csv\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -185,6 +186,11 @@ def build_parser() -> argparse.ArgumentParser:
     audit_parser.add_argument(
         "--export-csv",
         help="Optional path to export the selected audit records as CSV.",
+    )
+    audit_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Write only a machine-readable audit payload to stdout.",
     )
     audit_parser.set_defaults(handler=handle_audit)
 
@@ -394,8 +400,30 @@ def handle_audit(args: argparse.Namespace) -> int:
         if export_path is not None:
             _write_audit_csv(records, export_path)
     except (OSError, ValueError, sqlite3.DatabaseError) as exc:
-        _print_error(str(exc))
+        if args.json:
+            _emit_json(
+                _build_audit_error_payload(
+                    status="NETWORK_ERROR",
+                    message=str(exc),
+                    db_path=db_path,
+                    limit=args.limit,
+                    export_path=export_path,
+                )
+            )
+        else:
+            _print_error(str(exc))
         return NETWORK_EXIT_CODE
+
+    if args.json:
+        _emit_json(
+            _build_audit_payload(
+                records=records,
+                db_path=db_path,
+                limit=args.limit,
+                export_path=export_path,
+            )
+        )
+        return SUCCESS_EXIT_CODE
 
     _render_audit_records(
         records=records,
@@ -760,6 +788,56 @@ def _build_discovery_error_payload(
         },
         "formats": [],
         "sources": [],
+    }
+
+
+def _build_audit_payload(
+    *,
+    records: list[dict[str, object]],
+    db_path: Path,
+    limit: int,
+    export_path: Path | None,
+) -> dict[str, Any]:
+    """Build the machine-readable payload for `audit --json`."""
+
+    return {
+        "query": {
+            "limit": limit,
+            "export_csv": str(export_path) if export_path is not None else None,
+        },
+        "audit_result": {
+            "status": "OK",
+            "database_path": str(db_path),
+            "record_count": len(records),
+            "exported_csv": str(export_path) if export_path is not None else None,
+        },
+        "records": records,
+    }
+
+
+def _build_audit_error_payload(
+    *,
+    status: str,
+    message: str,
+    db_path: Path,
+    limit: int,
+    export_path: Path | None,
+) -> dict[str, Any]:
+    """Build the machine-readable error payload for `audit --json`."""
+
+    return {
+        "query": {
+            "limit": limit,
+            "export_csv": str(export_path) if export_path is not None else None,
+        },
+        "audit_result": {
+            "status": status,
+            "database_path": str(db_path),
+            "record_count": 0,
+            "exported_csv": None,
+            "diagnostics": [message],
+        },
+        "records": [],
     }
 
 

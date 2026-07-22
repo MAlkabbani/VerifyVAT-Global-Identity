@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -181,6 +182,69 @@ def test_audit_renders_recent_history_and_can_export_csv(
             "provider_payload": '{"verification":{"ok":true}}',
         }
     ]
+
+
+def test_audit_json_returns_machine_readable_records(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    """Audit JSON mode should emit one stable machine-readable payload."""
+
+    records = [
+        {
+            "transaction_id": 2,
+            "execution_timestamp": "2026-07-22T00:00:00Z",
+            "consultation_receipt": "receipt-2",
+            "raw_identifier": "NO000000002",
+            "normalized_identifier": "NO000000002",
+            "inferred_type": "no_orgnr",
+            "internal_status": "VALID",
+            "legal_name": "Example Org",
+            "address": "Oslo",
+            "provider_payload": '{"verification":{"ok":true}}',
+        }
+    ]
+
+    monkeypatch.setattr(cli_main, "get_default_db_path", lambda: tmp_path / "audit.db")
+    monkeypatch.setattr(cli_main, "fetch_recent_audit_records", lambda *args, **kwargs: records)
+
+    exit_code = cli_main.main(["audit", "--limit", "5", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    payload = json.loads(captured.out)
+    assert payload["query"]["limit"] == 5
+    assert payload["audit_result"]["status"] == "OK"
+    assert payload["audit_result"]["record_count"] == 1
+    assert payload["records"][0]["transaction_id"] == 2
+
+
+def test_audit_json_reports_machine_readable_error(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    """Audit JSON mode should not print plain-text errors to stdout or stderr."""
+
+    monkeypatch.setattr(cli_main, "get_default_db_path", lambda: tmp_path / "audit.db")
+
+    def raise_db_error(*args: object, **kwargs: object) -> list[dict[str, object]]:
+        del args, kwargs
+        raise sqlite3.DatabaseError("database is locked")
+
+    monkeypatch.setattr(cli_main, "fetch_recent_audit_records", raise_db_error)
+
+    exit_code = cli_main.main(["audit", "--limit", "5", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 3
+    assert captured.err == ""
+    payload = json.loads(captured.out)
+    assert payload["audit_result"]["status"] == "NETWORK_ERROR"
+    assert payload["records"] == []
+    assert payload["audit_result"]["diagnostics"] == ["database is locked"]
 
 
 def test_audit_limit_must_be_positive(capsys: pytest.CaptureFixture[str]) -> None:
