@@ -8,6 +8,8 @@ dynamic = ["version"]
 description = "Terminal-based VerifyVAT CLI for global business identifier validation."
 readme = "README.md"
 requires-python = ">=3.13"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
   "rich>=13.9.4",
   "verifyvat-sdk>=0.1.0",

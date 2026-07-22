@@ -314,4 +314,6 @@ Use these repository-local helpers when validating changes:
 
 ## Licensing and Contributions
 
-This software is released under the MIT License. Contributions, bug reports, and feature requests are welcome.
+This software is released under the MIT License. See [LICENSE](LICENSE) for the full text.
+
+Contributions, bug reports, and feature requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, validation, and submission expectations.
