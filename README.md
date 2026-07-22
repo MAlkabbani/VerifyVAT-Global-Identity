@@ -1,18 +1,24 @@
 # VerifyVAT Global Identity CLI
 
 ```text
-__     __        _ ______     ______   ______
-\ \   / /__ _ __(_) __\ \   / / __ | /_  __/
- \ \ / / _ \ '__/ / _| \ \ / / /_/ |  / /
-  \ V /  __/ |  / / |___\ V / ____ | / /
-   \_/ \___|_| /_/_____/ \_/_/    |_|/_/
-
-            Global Identity CLI
++--------------------------------------------------+
+| VerifyVAT Global Identity CLI                    |
+| Independent open-source CLI for VerifyVAT SDK    |
++--------------------------------------------------+
 ```
 
 VerifyVAT CLI is a Python command-line application for validating and enriching business identifiers through the official VerifyVAT SDK. It supports single checks, CSV bulk processing, local audit evidence, and metadata discovery for supported formats and registries.
 
-If this project saves you time, support ongoing maintenance here: [Buy Me a Coffee](https://buymeacoffee.com/webeworx)
+This README uses the upstream product name only to describe SDK compatibility and intended integration. It does not imply endorsement, partnership, or official branding by the upstream provider.
+
+<p>
+  <a href="https://buymeacoffee.com/webeworx" target="_blank" rel="noopener noreferrer">
+    <img
+      src="https://img.shields.io/badge/Support%20This%20Project-Coffee%20Fund-f59e0b?style=for-the-badge&labelColor=111827&color=fbbf24"
+      alt="Support this project"
+    />
+  </a>
+</p>
 
 ## Start Here
 
