@@ -202,18 +202,16 @@ class VerificationService:
         except ConfigError:
             raise
         except (VerifyVatError, httpx.TimeoutException, httpx.HTTPError, json.JSONDecodeError) as exc:
+            error_payload = _build_error_payload(exc)
             return _build_network_error_result(
                 raw_identifier=raw_identifier,
                 normalized_identifier=normalized_identifier,
                 inferred_type=normalized_type,
                 execution_timestamp=execution_timestamp,
-                diagnostics=[_sanitize_error_message(str(exc))],
+                diagnostics=[_build_user_diagnostic(exc)],
                 provider_payload={
                     "inference": _coerce_jsonable(inference_payload),
-                    "error": {
-                        "message": _sanitize_error_message(str(exc)),
-                        "type": exc.__class__.__name__,
-                    },
+                    "error": error_payload,
                 },
             )
 
@@ -715,6 +713,47 @@ def _sanitize_error_message(message: str) -> str:
     if api_key:
         return message.replace(api_key, "[REDACTED]")
     return message
+
+
+def _build_user_diagnostic(exc: Exception) -> str:
+    """Return a user-facing diagnostic that prefers stable API error codes."""
+
+    if isinstance(exc, VerifyVatError):
+        if exc.code == "monthly-quota-exceeded":
+            return (
+                "VerifyVAT has paused this check because this account has used up its monthly API "
+                "allowance. The free Flex plan includes 50 requests per month, and that limit has "
+                "been reached. Open VerifyVAT Profile > Billing to review your usage, then upgrade "
+                "your plan or add billing there to restore service immediately."
+            )
+        if exc.code == "daily-limit-exceeded":
+            return (
+                "VerifyVAT has paused this check because this account has reached its daily API "
+                "limit. Review your usage in VerifyVAT Profile > Billing, wait for the daily limit "
+                "to reset, or upgrade the plan if you need a higher allowance."
+            )
+        if exc.code == "burst-limit-exceeded":
+            return (
+                "VerifyVAT has paused this check because too many requests were sent too quickly. "
+                "Wait a moment, reduce request frequency, and try again. If this happens often, "
+                "review your plan limits in VerifyVAT Profile > Billing."
+            )
+
+    return _sanitize_error_message(str(exc))
+
+
+def _build_error_payload(exc: Exception) -> dict[str, Any]:
+    """Project one handled exception into a structured, JSON-safe error payload."""
+
+    payload: dict[str, Any] = {
+        "message": _sanitize_error_message(str(exc)),
+        "type": exc.__class__.__name__,
+    }
+    if isinstance(exc, VerifyVatError):
+        payload["status"] = exc.status
+        payload["code"] = exc.code
+        payload["trace_id"] = exc.trace_id
+    return payload
 
 
 def _sorted_unique_strings(values: Any) -> list[str]:

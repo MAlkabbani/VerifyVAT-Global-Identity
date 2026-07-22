@@ -33,6 +33,35 @@ def make_result(*, status: RuntimeStatus = "VALID") -> VerificationResult:
     )
 
 
+def make_rate_limited_result(*, code: str = "monthly-quota-exceeded") -> VerificationResult:
+    """Create a handled 429 result with structured upstream error details."""
+
+    return VerificationResult(
+        raw_identifier="FR35433115904",
+        normalized_identifier="FR35433115904",
+        inferred_type=None,
+        status="NETWORK_ERROR",
+        persisted_status="NETWORK_ERROR",
+        execution_timestamp="2026-07-22T05:12:10Z",
+        consultation_receipt=None,
+        legal_name=None,
+        address=None,
+        diagnostics=[
+            "VerifyVAT has paused this check because this account has used up its monthly API allowance."
+        ],
+        provider_payload={
+            "inference": None,
+            "error": {
+                "message": "VerifyVAT request to /infer-type failed with status 429",
+                "type": "VerifyVatError",
+                "status": 429,
+                "code": code,
+                "trace_id": "trace-123",
+            },
+        },
+    )
+
+
 def test_check_json_stdout_contains_only_machine_readable_payload(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -83,6 +112,40 @@ def test_check_persists_before_rendering(
 
     assert exit_code == 0
     assert call_order == ["persist", "render"]
+
+
+def test_persist_result_logs_rate_limit_events_for_capacity_tracking(tmp_path: Path) -> None:
+    """Handled 429 responses should be written to the runtime-events table."""
+
+    db_path = tmp_path / "audit.db"
+
+    persistence_error = cli_main._persist_result(make_rate_limited_result(), db_path)
+
+    assert persistence_error is None
+    with sqlite3.connect(db_path) as connection:
+        row = connection.execute(
+            """
+            SELECT
+                event_type,
+                raw_identifier,
+                normalized_identifier,
+                http_status,
+                error_code,
+                endpoint,
+                trace_id
+            FROM runtime_events
+            """
+        ).fetchone()
+
+    assert row == (
+        "verifyvat_rate_limit",
+        "FR35433115904",
+        "FR35433115904",
+        429,
+        "monthly-quota-exceeded",
+        "/infer-type",
+        "trace-123",
+    )
 
 
 def test_bulk_continues_when_rows_fail_but_errors_are_recoverable(

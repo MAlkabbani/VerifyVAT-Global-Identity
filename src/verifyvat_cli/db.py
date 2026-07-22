@@ -40,6 +40,21 @@ CREATE TABLE IF NOT EXISTS verification_logs (
 )
 """
 
+CREATE_RUNTIME_EVENTS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS runtime_events (
+    event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_timestamp TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    raw_identifier TEXT NOT NULL,
+    normalized_identifier TEXT NOT NULL,
+    inferred_type TEXT,
+    http_status INTEGER,
+    error_code TEXT,
+    endpoint TEXT,
+    trace_id TEXT
+)
+"""
+
 
 def get_default_db_path() -> Path:
     """Return the default audit-database location."""
@@ -55,6 +70,7 @@ def ensure_database(db_path: Path | None = None) -> Path:
 
     with _connect(resolved_path) as connection:
         connection.execute(CREATE_VERIFICATION_LOGS_TABLE_SQL)
+        connection.execute(CREATE_RUNTIME_EVENTS_TABLE_SQL)
         connection.commit()
 
     return resolved_path
@@ -97,6 +113,46 @@ def insert_audit_record(result: VerificationResult, db_path: Path | None = None)
     row_id = cursor.lastrowid
     if row_id is None:
         raise sqlite3.DatabaseError("Failed to determine the inserted audit-record id.")
+    return int(row_id)
+
+
+def insert_runtime_event(event: dict[str, object], db_path: Path | None = None) -> int:
+    """Insert one runtime event row for operational tracking."""
+
+    resolved_path = ensure_database(db_path)
+
+    with _connect(resolved_path) as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO runtime_events (
+                event_timestamp,
+                event_type,
+                raw_identifier,
+                normalized_identifier,
+                inferred_type,
+                http_status,
+                error_code,
+                endpoint,
+                trace_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                event.get("event_timestamp"),
+                event.get("event_type"),
+                event.get("raw_identifier"),
+                event.get("normalized_identifier"),
+                event.get("inferred_type"),
+                event.get("http_status"),
+                event.get("error_code"),
+                event.get("endpoint"),
+                event.get("trace_id"),
+            ),
+        )
+        connection.commit()
+
+    row_id = cursor.lastrowid
+    if row_id is None:
+        raise sqlite3.DatabaseError("Failed to determine the inserted runtime-event id.")
     return int(row_id)
 
 

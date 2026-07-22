@@ -33,6 +33,7 @@ from verifyvat_cli.db import (
     fetch_recent_audit_records,
     get_default_db_path,
     insert_audit_record,
+    insert_runtime_event,
 )
 
 SUCCESS_EXIT_CODE = 0
@@ -613,6 +614,7 @@ def _persist_result(result: VerificationResult, db_path: Path) -> str | None:
     try:
         ensure_database(db_path)
         insert_audit_record(result, db_path)
+        _log_runtime_events(result, db_path)
         return None
     except sqlite3.DatabaseError as exc:
         return f"Failed to persist the audit record: {exc}"
@@ -808,6 +810,42 @@ def _write_audit_csv(records: list[dict[str, object]], export_path: Path) -> Non
         writer.writeheader()
         for record in records:
             writer.writerow({column: record.get(column, "") for column in AUDIT_EXPORT_COLUMNS})
+
+
+def _log_runtime_events(result: VerificationResult, db_path: Path) -> None:
+    """Record noteworthy handled runtime failures for later operational review."""
+
+    error_payload = result.provider_payload.get("error")
+    if not isinstance(error_payload, dict):
+        return
+
+    http_status = error_payload.get("status")
+    if http_status != 429:
+        return
+
+    insert_runtime_event(
+        {
+            "event_timestamp": result.execution_timestamp,
+            "event_type": "verifyvat_rate_limit",
+            "raw_identifier": result.raw_identifier,
+            "normalized_identifier": result.normalized_identifier,
+            "inferred_type": result.inferred_type,
+            "http_status": http_status,
+            "error_code": error_payload.get("code"),
+            "endpoint": _infer_error_endpoint(str(error_payload.get("message", ""))),
+            "trace_id": error_payload.get("trace_id"),
+        },
+        db_path,
+    )
+
+
+def _infer_error_endpoint(message: str) -> str | None:
+    """Extract the failing VerifyVAT endpoint from the SDK error message when present."""
+
+    for token in ("/infer-type", "/verify", "/id-types", "/sources"):
+        if token in message:
+            return token
+    return None
 
 
 def _build_runtime_error_payload(*, message: str, db_path: Path) -> dict[str, Any]:

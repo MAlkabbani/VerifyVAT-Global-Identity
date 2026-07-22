@@ -5,6 +5,7 @@ from __future__ import annotations
 import httpx
 
 import pytest
+from verifyvat_sdk.client.errors import VerifyVatError
 
 from verifyvat_cli.core import DiscoveryService, VerificationService, normalize_identifier, verify_once
 
@@ -85,6 +86,20 @@ class TimeoutInferrer(FakeInferrer):
         raise httpx.TimeoutException("timed out")
 
 
+class MonthlyQuotaInferrer(FakeInferrer):
+    """Inference stub that simulates an exhausted monthly quota."""
+
+    def infer_id_type(self, **_: object) -> dict[str, object]:
+        """Raise the same structured SDK error the live client would expose."""
+
+        raise VerifyVatError(
+            "VerifyVAT request to /infer-type failed with status 429",
+            status=429,
+            code="monthly-quota-exceeded",
+            trace_id="trace-123",
+        )
+
+
 def test_normalize_identifier_removes_separators() -> None:
     """Normalization should preserve only uppercase alphanumeric content."""
 
@@ -136,6 +151,30 @@ def test_verification_service_maps_timeout_to_network_error() -> None:
     assert result.status == "NETWORK_ERROR"
     assert result.persisted_status == "NETWORK_ERROR"
     assert result.diagnostics == ["timed out"]
+
+
+def test_verification_service_maps_monthly_quota_exhaustion_to_clear_message() -> None:
+    """Monthly quota exhaustion should surface a plain-language, actionable message."""
+
+    service = VerificationService(
+        client=FakeClient(),
+        inferrer=MonthlyQuotaInferrer(),
+        verifier=FakeVerifier(),
+    )
+
+    result = service.verify_identifier("FR35433115904", country="FR")
+
+    assert result.status == "NETWORK_ERROR"
+    assert result.persisted_status == "NETWORK_ERROR"
+    assert "50 requests per month" in result.diagnostics[0]
+    assert "Profile > Billing" in result.diagnostics[0]
+    assert result.provider_payload["error"] == {
+        "message": "VerifyVAT request to /infer-type failed with status 429",
+        "type": "VerifyVatError",
+        "status": 429,
+        "code": "monthly-quota-exceeded",
+        "trace_id": "trace-123",
+    }
 
 
 def test_discovery_service_lists_formats_and_sources() -> None:
