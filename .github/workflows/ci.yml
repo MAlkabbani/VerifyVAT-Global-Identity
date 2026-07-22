@@ -42,4 +42,7 @@ jobs:
         run: python -m pytest -q
 
       - name: Run offline smoke test
+        env:
+          VERIFYVAT_CLI_BIN: verifyvat
+          VERIFYVAT_PYTHON_BIN: python
         run: bash ./scripts/smoke_test.sh --offline

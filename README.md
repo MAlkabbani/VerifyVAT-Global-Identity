@@ -130,7 +130,7 @@ For a repeatable repo-local check flow, use:
 ./scripts/smoke_test.sh --live
 ```
 
-The live mode requires `VERIFYVAT_API_KEY`. The offline mode checks the installed CLI, local audit-read behavior, and docs alignment without calling the remote API.
+The live mode requires `VERIFYVAT_API_KEY`. The offline mode checks the installed CLI, local audit-read behavior, and docs alignment without calling the remote API. The helper prefers the repo-local `.venv` binaries when present and falls back to the active environment's `verifyvat` and `python` executables in CI-style installs.
 
 ### Validating a Single Identifier
 
@@ -282,7 +282,7 @@ If you are onboarding to this repository for the first time:
 
 Use these repository-local helpers when validating changes:
 
-- `./scripts/smoke_test.sh --offline`: runs local-only smoke checks, including `verifyvat --version`, CLI help, audit JSON, and docs alignment.
+- `./scripts/smoke_test.sh --offline`: runs local-only smoke checks, including `verifyvat --version`, CLI help, audit JSON, and docs alignment; it prefers repo-local `.venv` binaries but falls back to the active environment when needed.
 - `./scripts/smoke_test.sh --live`: adds real VerifyVAT API calls and a bulk-fixture pass when `VERIFYVAT_API_KEY` is exported.
 - `./scripts/check_docs_alignment.py`: verifies the high-signal docs stay aligned with the shipped command surface and helper workflow.
 

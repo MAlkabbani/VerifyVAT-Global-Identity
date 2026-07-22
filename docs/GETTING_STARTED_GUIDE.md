@@ -326,6 +326,7 @@ When you have a valid `VERIFYVAT_API_KEY` exported and want the full end-to-end 
 What these do:
 
 - `./scripts/smoke_test.sh --offline` checks `verifyvat --version`, CLI help, local audit JSON, and docs alignment without calling the remote API
+- `./scripts/smoke_test.sh --offline` prefers repo-local `.venv` binaries but falls back to the active environment's `verifyvat` and `python` executables when needed, which keeps CI-compatible installs working
 - `./scripts/smoke_test.sh --live` adds real `check`, `discovery`, and `bulk` smoke tests using `./fixtures/sample_bulk_input.csv`
 - `./scripts/check_docs_alignment.py` verifies the core docs still match the shipped command surface
 
