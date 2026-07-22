@@ -1,5 +1,12 @@
 # VerifyVAT CLI Refinement Roadmap
 
+## Related Docs
+
+- Repository overview: [README.md](../README.md)
+- Beginner onboarding: [GETTING_STARTED_GUIDE.md](./GETTING_STARTED_GUIDE.md)
+- Shipped implementation scope: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)
+- Product and architecture context: [PRD.md](./PRD.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DESIGN.md](./DESIGN.md), [SPECS.md](./SPECS.md)
+
 ## Purpose
 
 This roadmap captures the post-implementation refinement and extension work that follows the completed CLI skeleton. It prioritizes usability, onboarding clarity, operational confidence, and targeted feature deepening without changing the core architecture.

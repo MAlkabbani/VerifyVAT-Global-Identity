@@ -1,5 +1,14 @@
 # Architecture and Implementation Blueprint for the VerifyVAT Python Command Line Interface
 
+## Related Docs
+
+- Repository overview: [README.md](../README.md)
+- Beginner onboarding: [GETTING_STARTED_GUIDE.md](./GETTING_STARTED_GUIDE.md)
+- Shipped implementation scope: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)
+- Follow-on refinement phases: [REFINEMENT_ROADMAP.md](./REFINEMENT_ROADMAP.md)
+- Product and technical context: [PRD.md](./PRD.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DESIGN.md](./DESIGN.md), [SPECS.md](./SPECS.md)
+- AI coding prompt: [PROMPT.md](./PROMPT.md)
+
 ## Executive Summary and Strategic Context
 
 The global digitization of tax administration has fundamentally altered the compliance landscape for enterprises engaging in cross-border commerce. Specifically, within the European Union and other jurisdictions utilizing Value-Added Tax (VAT) or Goods and Services Tax (GST) systems, businesses are legally obligated to validate the registration status of their commercial counterparties to properly apply zero-rating or reverse-charge mechanisms1. The failure to accurately authenticate a business identifier undermines the validity of invoices, exposes the issuing entity to severe financial penalties, and potentially results in the denial of input tax credits during formal governmental audits3.  

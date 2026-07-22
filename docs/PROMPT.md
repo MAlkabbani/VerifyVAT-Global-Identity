@@ -1,5 +1,14 @@
 ## AI Coder Meta-Prompt
 
+### Related Docs
+
+- Repository overview: [README.md](../README.md)
+- Beginner onboarding: [GETTING_STARTED_GUIDE.md](./GETTING_STARTED_GUIDE.md)
+- Shipped implementation scope: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)
+- Follow-on refinement phases: [REFINEMENT_ROADMAP.md](./REFINEMENT_ROADMAP.md)
+- Product and technical context: [PRD.md](./PRD.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DESIGN.md](./DESIGN.md), [SPECS.md](./SPECS.md)
+- Research source material: [research.md](./research.md)
+
 To accelerate generation of the initial Python codebase, the repository includes a meta-prompt designed for advanced large language models and AI coding assistants. This prompt synthesizes the architectural and technical constraints into a clear instruction set.
 
 System Prompt Formulation for AI Assistants:

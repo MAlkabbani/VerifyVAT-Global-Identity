@@ -1,5 +1,15 @@
 ## Terminal User Experience and Interface Design
 
+### Related Docs
+
+- Repository overview: [README.md](../README.md)
+- Beginner onboarding: [GETTING_STARTED_GUIDE.md](./GETTING_STARTED_GUIDE.md)
+- Product context: [PRD.md](./PRD.md)
+- Architecture context: [ARCHITECTURE.md](./ARCHITECTURE.md)
+- Shipped implementation scope: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)
+- Follow-on refinement phases: [REFINEMENT_ROADMAP.md](./REFINEMENT_ROADMAP.md)
+- Supporting technical spec: [SPECS.md](./SPECS.md)
+
 The design of a CLI is defined by its argument syntax, feedback mechanisms, and output formatting. A successful tool must be intuitive for human operators while remaining predictable for automated shell scripts.
 
 ### Command Hierarchy and Argument Parsing

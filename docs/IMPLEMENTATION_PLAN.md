@@ -1,5 +1,12 @@
 # VerifyVAT CLI Implementation Plan
 
+## Related Docs
+
+- Repository overview: [README.md](../README.md)
+- Beginner onboarding: [GETTING_STARTED_GUIDE.md](./GETTING_STARTED_GUIDE.md)
+- Follow-on work: [REFINEMENT_ROADMAP.md](./REFINEMENT_ROADMAP.md)
+- Product and architecture context: [PRD.md](./PRD.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DESIGN.md](./DESIGN.md), [SPECS.md](./SPECS.md)
+
 ## Purpose
 
 This document captures the approved phase-1 implementation choices for the VerifyVAT Python CLI so the codebase, product docs, and future work remain aligned.

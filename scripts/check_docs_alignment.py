@@ -20,6 +20,9 @@ REQUIRED_FILES = (
 
 REQUIRED_SNIPPETS: dict[Path, tuple[str, ...]] = {
     Path("README.md"): (
+        "[GETTING_STARTED_GUIDE.md](docs/GETTING_STARTED_GUIDE.md)",
+        "[IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)",
+        "[REFINEMENT_ROADMAP.md](docs/REFINEMENT_ROADMAP.md)",
         "`verifyvat --version`",
         "`./scripts/smoke_test.sh --offline`",
         "`./scripts/check_docs_alignment.py`",
@@ -28,6 +31,9 @@ REQUIRED_SNIPPETS: dict[Path, tuple[str, ...]] = {
         "verifyvat audit --status VALID --search hydro",
     ),
     Path("docs/GETTING_STARTED_GUIDE.md"): (
+        "[README.md](../README.md)",
+        "[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)",
+        "[REFINEMENT_ROADMAP.md](./REFINEMENT_ROADMAP.md)",
         "`verifyvat --version`",
         "`./scripts/smoke_test.sh --offline`",
         "`./fixtures/sample_bulk_input.csv`",
@@ -35,18 +41,22 @@ REQUIRED_SNIPPETS: dict[Path, tuple[str, ...]] = {
         "verifyvat audit --status VALID --search hydro",
     ),
     Path("docs/DESIGN.md"): (
+        "### Related Docs",
         "--limit [INT], --export-csv [FILE_PATH], --status [STATUS], --search [TEXT], --json",
         "The root parser should also expose a `--version` flag",
     ),
     Path("docs/SPECS.md"): (
+        "### Related Docs",
         "`verifyvat audit`: Reads recent local audit records from SQLite, renders them in a human-readable table, may filter the selected rows by exact status or case-insensitive search, and may export the selected rows as CSV or JSON.",
         "--limit [INT], --export-csv [FILE_PATH], --status [STATUS], --search [TEXT], --json",
         "The root parser should expose `--version` so operators can confirm the installed release quickly.",
     ),
     Path("docs/ARCHITECTURE.md"): (
+        "### Related Docs",
         "The currently shipped implementation now includes audit-query and export flows",
     ),
     Path("docs/PRD.md"): (
+        "### Related Docs",
         "The currently shipped implementation scope delivers `check`, `bulk`, `audit`, and `discovery`.",
     ),
 }

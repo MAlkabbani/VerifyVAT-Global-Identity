@@ -1,5 +1,14 @@
 ## Technical Specifications Document
 
+### Related Docs
+
+- Repository overview: [README.md](../README.md)
+- Beginner onboarding: [GETTING_STARTED_GUIDE.md](./GETTING_STARTED_GUIDE.md)
+- Product context: [PRD.md](./PRD.md)
+- Architecture and design context: [ARCHITECTURE.md](./ARCHITECTURE.md), [DESIGN.md](./DESIGN.md)
+- Shipped implementation scope: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)
+- Follow-on refinement phases: [REFINEMENT_ROADMAP.md](./REFINEMENT_ROADMAP.md)
+
 The Technical Specifications translate the architectural vision into schemas, class contracts, and data structures. This document serves as the source of truth for developers writing the Python codebase.
 
 ### Audit Database Schema Definition

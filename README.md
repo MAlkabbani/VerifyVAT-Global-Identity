@@ -6,9 +6,9 @@ VerifyVAT CLI is a Python command-line application for validating and enriching 
 
 If you are new to the repository:
 
-- Read the beginner-friendly guide: [GETTING_STARTED_GUIDE.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/GETTING_STARTED_GUIDE.md)
-- Review the shipped implementation scope: [IMPLEMENTATION_PLAN.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/IMPLEMENTATION_PLAN.md)
-- Review the next refinement phases: [REFINEMENT_ROADMAP.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/REFINEMENT_ROADMAP.md)
+- Read the beginner-friendly guide: [GETTING_STARTED_GUIDE.md](docs/GETTING_STARTED_GUIDE.md)
+- Review the shipped implementation scope: [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
+- Review the next refinement phases: [REFINEMENT_ROADMAP.md](docs/REFINEMENT_ROADMAP.md)
 
 ## What It Does
 
@@ -104,7 +104,7 @@ If you accidentally paste or expose a live key in terminal history, screenshots,
 - Prefer header-based authentication and do not place secrets in URLs, query strings, or copied example commands.
 - Redact secrets from debug output, error reports, and exported diagnostics.
 
-For a fuller onboarding flow, use [GETTING_STARTED_GUIDE.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/GETTING_STARTED_GUIDE.md).
+For a fuller onboarding flow, use [GETTING_STARTED_GUIDE.md](docs/GETTING_STARTED_GUIDE.md).
 
 ## Operational Usage
 
@@ -288,10 +288,11 @@ Use these repository-local helpers when validating changes:
 
 ## Documentation Map
 
-- Beginner onboarding and full usage guide: [GETTING_STARTED_GUIDE.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/GETTING_STARTED_GUIDE.md)
-- Shipped implementation contract: [IMPLEMENTATION_PLAN.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/IMPLEMENTATION_PLAN.md)
-- Next refinement phases: [REFINEMENT_ROADMAP.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/REFINEMENT_ROADMAP.md)
-- Product and architecture context: [PRD.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/PRD.md), [ARCHITECTURE.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/ARCHITECTURE.md), [DESIGN.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/DESIGN.md), [SPECS.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/SPECS.md)
+- Beginner onboarding and full usage guide: [GETTING_STARTED_GUIDE.md](docs/GETTING_STARTED_GUIDE.md)
+- Shipped implementation contract: [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
+- Next refinement phases: [REFINEMENT_ROADMAP.md](docs/REFINEMENT_ROADMAP.md)
+- Product and architecture context: [PRD.md](docs/PRD.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DESIGN.md](docs/DESIGN.md), [SPECS.md](docs/SPECS.md)
+- Original implementation prompt and research context: [PROMPT.md](docs/PROMPT.md), [research.md](docs/research.md)
 
 ## Licensing and Contributions
 

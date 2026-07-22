@@ -1,5 +1,12 @@
 # VerifyVAT CLI Getting Started Guide
 
+## Related Docs
+
+- Start with the repository overview in [README.md](../README.md).
+- Review shipped scope in [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
+- Review follow-on phases in [REFINEMENT_ROADMAP.md](./REFINEMENT_ROADMAP.md).
+- Review product and architecture context in [PRD.md](./PRD.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DESIGN.md](./DESIGN.md), and [SPECS.md](./SPECS.md).
+
 ## Who This Guide Is For
 
 This guide is for developers who are new to the repository, new to the VerifyVAT product, or new to command-line Python applications in general. It focuses on the practical path: how to set up the project, how to run it locally, how to understand the main commands, and how to avoid the most common mistakes.
@@ -345,6 +352,7 @@ For a new developer working locally:
 
 ## Where To Go Next
 
-- Start with the root [README](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/README.md) for the project overview.
-- Read [IMPLEMENTATION_PLAN.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/IMPLEMENTATION_PLAN.md) for the shipped implementation scope.
-- Read [REFINEMENT_ROADMAP.md](file:///Users/home/VerifyVat-CLI/VerifyVAT-Global-Identity/docs/REFINEMENT_ROADMAP.md) for the next refinement and extension phases.
+- Start with the root [README.md](../README.md) for the project overview.
+- Read [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the shipped implementation scope.
+- Read [REFINEMENT_ROADMAP.md](./REFINEMENT_ROADMAP.md) for the next refinement and extension phases.
+- Review the product and design context in [PRD.md](./PRD.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DESIGN.md](./DESIGN.md), and [SPECS.md](./SPECS.md).

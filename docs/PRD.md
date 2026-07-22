@@ -1,5 +1,13 @@
 ## Product Requirements Document
 
+### Related Docs
+
+- Repository overview: [README.md](../README.md)
+- Beginner onboarding: [GETTING_STARTED_GUIDE.md](./GETTING_STARTED_GUIDE.md)
+- Shipped implementation scope: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)
+- Follow-on refinement phases: [REFINEMENT_ROADMAP.md](./REFINEMENT_ROADMAP.md)
+- Supporting technical docs: [ARCHITECTURE.md](./ARCHITECTURE.md), [DESIGN.md](./DESIGN.md), [SPECS.md](./SPECS.md)
+
 The Product Requirements Document defines the operational scope, target personas, and functional requirements for the CLI.
 
 The VerifyVAT Command Line Interface is intended to be a practical utility for financial operations, compliance auditing, and developer workflows. It bridges the gap between web dashboards and lower-level API integrations by providing an immediate terminal-based interface for global identity verification.

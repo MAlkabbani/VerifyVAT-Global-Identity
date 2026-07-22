@@ -1,5 +1,14 @@
 ## Architectural Design Document
 
+### Related Docs
+
+- Repository overview: [README.md](../README.md)
+- Beginner onboarding: [GETTING_STARTED_GUIDE.md](./GETTING_STARTED_GUIDE.md)
+- Product context: [PRD.md](./PRD.md)
+- Shipped implementation scope: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)
+- Follow-on refinement phases: [REFINEMENT_ROADMAP.md](./REFINEMENT_ROADMAP.md)
+- Supporting technical docs: [DESIGN.md](./DESIGN.md), [SPECS.md](./SPECS.md)
+
 The Architecture document outlines the technical framework, module boundaries, and data flow required to fulfill the mandates established in the PRD. The system is designed to be lightweight, stateless across network requests, and durable for local evidence retention.
 
 The foundation of the application rests on Python 3.13 or higher. This version is required to use advanced typing syntax, structural pattern matching, and performance characteristics that align with the official VerifyVAT Python SDK. Dependency management and virtual environment orchestration use uv to ensure deterministic build environments for contributors.
